@@ -82,7 +82,7 @@ Data kos sangat **relasional**: properti → kamar → sewa → tagihan → pemb
 
 ```
 kosku/
-├─ docs/                      # dokumen spesifikasi (folder ini)
+├─ specs/                     # dokumen spesifikasi (folder ini)
 ├─ src/
 │  ├─ app/
 │  │  ├─ (auth)/login/        # halaman login

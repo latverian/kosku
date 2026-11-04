@@ -17,14 +17,14 @@
 ## Dokumentasi
 | Dokumen | Isi |
 |---|---|
-| [01 — PRD](docs/01-PRD.md) | Latar belakang, tujuan, persona, ruang lingkup, prioritas fitur |
-| [02 — Requirements](docs/02-requirements.md) | Kebutuhan fungsional & non-fungsional + acceptance criteria |
-| [03 — Tech stack](docs/03-tech-stack.md) | Rekomendasi bahasa, framework, database, biaya |
-| [04 — Database](docs/04-database.md) | ERD, enum, definisi tabel, constraint, RLS |
-| [05 — Arsitektur](docs/05-architecture.md) | Komponen, job terjadwal, alur, integrasi WA & pembayaran, keamanan |
-| [06 — Desain UI/UX](docs/06-ui-design.md) | Prinsip, warna status, sitemap, wireframe |
-| [07 — Testing](docs/07-testing.md) | Strategi uji, kasus uji wajib, Definition of Done |
-| [08 — Roadmap](docs/08-roadmap.md) | Fase pengerjaan & pertanyaan terbuka |
+| [01 — PRD](specs/01-PRD.md) | Latar belakang, tujuan, persona, ruang lingkup, prioritas fitur |
+| [02 — Requirements](specs/02-requirements.md) | Kebutuhan fungsional & non-fungsional + acceptance criteria |
+| [03 — Tech stack](specs/03-tech-stack.md) | Rekomendasi bahasa, framework, database, biaya |
+| [04 — Database](specs/04-database.md) | ERD, enum, definisi tabel, constraint, RLS |
+| [05 — Arsitektur](specs/05-architecture.md) | Komponen, job terjadwal, alur, integrasi WA & pembayaran, keamanan |
+| [06 — Desain UI/UX](specs/06-ui-design.md) | Prinsip, warna status, sitemap, wireframe |
+| [07 — Testing](specs/07-testing.md) | Strategi uji, kasus uji wajib, Definition of Done |
+| [08 — Roadmap](specs/08-roadmap.md) | Fase pengerjaan & pertanyaan terbuka |
 
 ## Tech stack (rencana)
 TypeScript · Next.js 15 · PostgreSQL (Supabase) · Drizzle ORM · Tailwind + shadcn/ui · Fonnte (WhatsApp) · Vercel
