@@ -10,6 +10,6 @@ export default defineConfig({
     environment: "node",
     include: ["tests/db/**/*.test.ts"],
     fileParallelism: false,
-    setupFiles: ["dotenv/config"],
+    setupFiles: ["./src/db/load-env.ts"],
   },
 });

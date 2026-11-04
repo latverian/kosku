@@ -2,7 +2,17 @@
 # Reset database PostgreSQL LOKAL (bukan Supabase) lalu jalankan migrasi.
 # Pakai: DATABASE_URL=postgres://... pnpm db:reset-local
 set -euo pipefail
-: "${DATABASE_URL:?DATABASE_URL wajib diisi}"
+# Ambil DATABASE_URL dari .env.local / .env bila belum ada di shell.
+if [ -z "${DATABASE_URL:-}" ]; then
+  for f in .env.local .env; do
+    if [ -f "$f" ]; then
+      line=$(grep -E '^DATABASE_URL=' "$f" | tail -1 || true)
+      if [ -n "$line" ]; then DATABASE_URL="${line#DATABASE_URL=}"; break; fi
+    fi
+  done
+fi
+: "${DATABASE_URL:?DATABASE_URL wajib diisi (di .env.local)}"
+export DATABASE_URL
 case "$DATABASE_URL" in
   *localhost*|*127.0.0.1*) ;;
   *) echo "Menolak: db:reset-local hanya untuk database lokal." >&2; exit 1 ;;

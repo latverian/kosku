@@ -12,7 +12,7 @@
  * halaman /login), ia dijadikan owner. Seed menolak berjalan jika properti MLT
  * sudah ada.
  */
-import "dotenv/config";
+import "./load-env";
 import { eq, sql } from "drizzle-orm";
 import {
   addMonths,
