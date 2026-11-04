@@ -117,6 +117,13 @@
   }
   html {
     -webkit-tap-highlight-color: transparent;
+    /* navigasi bawah HP (h-16) tidak boleh menutupi elemen yang difokus/di-scroll */
+    scroll-padding-bottom: 6rem;
+  }
+  @media (min-width: 64rem) {
+    html {
+      scroll-padding-bottom: 0;
+    }
   }
   body {
     @apply bg-background text-foreground antialiased;

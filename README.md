@@ -2,7 +2,7 @@
 
 **Sistem manajemen kos**: tagihan bulanan otomatis, pengingat WhatsApp, dashboard status pembayaran, portal penghuni, dan pengelolaan komplain.
 
-> Status: **Fase 0 selesai** (fondasi: project, database, login, dashboard). Lihat [roadmap](specs/08-roadmap.md).
+> Status: **Fase 1 selesai**: kamar, penghuni (check-in/out, pindah kamar), tagihan otomatis, pembayaran & verifikasi, pengaturan. Berikutnya Fase 2 (pengingat WhatsApp, portal penghuni, komplain). Lihat [roadmap](specs/08-roadmap.md).
 
 ## Fitur utama
 
@@ -96,10 +96,22 @@ tests/unit/         tes unit (Vitest)
 tests/db/           tes integrasi database
 ```
 
+## Tagihan otomatis (cron)
+
+Setiap hari pukul 07.00 WIB, Vercel Cron memanggil `/api/cron/generate-invoices` (lihat `vercel.json`) untuk membuat tagihan yang jatuh tempo ≤ N hari lagi (atur di **Pengaturan**). Isi `CRON_SECRET` di environment Vercel; Vercel mengirimnya otomatis sebagai header.
+
+Uji manual di lokal:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/generate-invoices
+```
+
+Tagihan juga bisa dibuat kapan saja lewat tombol **Buat tagihan sekarang** di halaman Tagihan.
+
 ## Deploy ke Vercel
 
 1. Import repo ini di [vercel.com/new](https://vercel.com/new).
-2. Isi environment variables yang sama dengan `.env.local` (kecuali `KOSKU_DEV_PREVIEW_USER_ID`), dan ubah `APP_URL` ke domain Vercel.
+2. Isi environment variables yang sama dengan `.env.local` (kecuali `KOSKU_DEV_PREVIEW_USER_ID`), termasuk `CRON_SECRET` dan `NIK_ENCRYPTION_KEY`, dan ubah `APP_URL` ke domain Vercel.
 3. Di Supabase **Authentication → URL Configuration**, tambahkan `https://<domain>/auth/confirm`.
 
 ## Stitch MCP (desain UI)

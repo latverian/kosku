@@ -33,7 +33,10 @@ Kode kebutuhan: **FR** = fungsional, **NFR** = non-fungsional. Setiap FR punya k
 
 **AC FR-2.2**
 - Jika tanggal tagih tidak diisi, default = tanggal check-in (dibatasi maksimum 28 agar aman di bulan Februari).
-- Opsi "prorata bulan pertama": tagihan pertama = harga × (sisa hari / jumlah hari di bulan itu), dibulatkan ke atas ke ribuan.
+- Model siklus: tagihan periode P menutup [tanggal tagih bulan P, tanggal tagih bulan berikutnya), dibayar di muka.
+- Masuk di tengah siklus → tagihan pertama jatuh tempo di hari masuk dan menutup sisa siklus. Opsi "prorata bulan pertama" aktif: harga × (sisa hari siklus / panjang siklus), dibulatkan ke atas ke ribuan. Nonaktif: ditagih penuh.
+- Contoh: tagih tgl 1, masuk 20 Nov, Rp1.500.000 → siklus 1 Nov–1 Des (30 hari), sisa 11 hari → Rp550.000.
+- Penghuni lama yang baru dimasukkan ke Kosku: isi "mulai ditagih dari bulan" agar tagihan bulan-bulan sebelumnya tidak dibuat (`leases.billing_start_period`).
 
 ### M3 — Tagihan (Invoice)
 

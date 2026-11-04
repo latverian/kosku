@@ -4,7 +4,10 @@
  *   SEED_OWNER_EMAIL=kamu@email.com pnpm db:seed
  *
  * - Properti "Kos Melati" (MLT), 12 kamar (3 lantai × 4), 9 terisi.
- * - Tagihan 3 periode terakhir dengan campuran lunas, sebagian, terlambat,
+ * - Penghuni dimasukkan lewat service check-in yang sama dengan aplikasi,
+ *   sebagai "penghuni lama" yang mulai ditagih 2 bulan lalu, sehingga tagihan
+ *   mengikuti aturan siklus & prorata sungguhan.
+ * - Tagihan lama lunas; tagihan terbaru campuran lunas, sebagian, terlambat,
  *   dan menunggu verifikasi — relatif terhadap tanggal hari ini.
  * - 5 komplain dengan status berbeda.
  *
@@ -13,20 +16,11 @@
  * sudah ada.
  */
 import "./load-env";
-import { eq, sql } from "drizzle-orm";
-import {
-  addMonths,
-  dueDate,
-  firstPeriod,
-  invoiceNumber,
-  periodOf,
-  prorate,
-  todayIn,
-  addDays,
-  daysBetween,
-} from "../lib/billing";
-import { formatPeriod } from "../lib/format";
+import { asc, eq, sql } from "drizzle-orm";
+import { addDays, addMonths, dueDate, periodOf, todayIn } from "../lib/billing";
 import { DEFAULT_TEMPLATES } from "../lib/messaging/templates";
+import { SYSTEM } from "../services/core";
+import { checkIn } from "../services/tenants";
 import { createDb } from "./client";
 import * as s from "./schema";
 
@@ -46,7 +40,7 @@ const ROOM_TYPES = [
 
 type Scenario = "paid" | "partial" | "overdue" | "pending" | "upcoming";
 
-// kamar → [nama, no. WA, tanggal tagih, bulan sejak masuk, skenario bulan ini]
+// kamar → [nama, no. WA, tanggal tagih, bulan sejak masuk, skenario tagihan terbaru]
 const OCCUPANTS: Record<string, [string, string, number, number, Scenario]> = {
   "01": ["Andi Pratama", "6281211110001", 1, 14, "paid"],
   "02": ["Rina Wulandari", "6281211110002", 5, 9, "paid"],
@@ -76,6 +70,7 @@ async function main() {
 
     const ownerId = await findOwner(db);
     const today = todayIn(TZ);
+    const billingStart = addMonths(periodOf(today), -2);
 
     await db.transaction(async (tx) => {
       const [property] = await tx
@@ -110,7 +105,6 @@ async function main() {
         })),
       );
 
-      // Kamar
       const roomRows = await tx
         .insert(s.rooms)
         .values(
@@ -137,83 +131,53 @@ async function main() {
         if (!occupant) continue;
         const [fullName, phone, billingDay, monthsAgo, scenario] = occupant;
 
-        const [tenant] = await tx
-          .insert(s.tenants)
-          .values({
-            propertyId: property.id,
-            fullName,
-            phone,
-            occupation: monthsAgo > 10 ? "Karyawan swasta" : "Mahasiswa",
-            emergencyName: "Orang tua",
-            emergencyRelation: "Orang tua",
-            emergencyPhone: "6281399990000",
-          })
-          .returning();
-
-        // Tanggal masuk: N bulan lalu pada tanggal tagih (+ 3 hari untuk satu orang agar ada prorata)
+        // Kamar 11 masuk 3 hari setelah tanggal tagih → tagihan pertama prorata
         const startPeriod = addMonths(periodOf(today), -monthsAgo);
         const startDate =
           room.code === "11"
             ? addDays(dueDate(startPeriod, billingDay), 3)
             : dueDate(startPeriod, billingDay);
 
-        const [lease] = await tx
-          .insert(s.leases)
-          .values({
-            propertyId: property.id,
-            roomId: room.id,
-            tenantId: tenant.id,
+        const { tenant, invoices } = await checkIn(tx, SYSTEM, {
+          roomId: room.id,
+          tenant: {
+            fullName,
+            phone,
+            email: null,
+            nik: null,
+            occupation: monthsAgo > 10 ? "Karyawan swasta" : "Mahasiswa",
+            emergencyName: "Orang tua",
+            emergencyRelation: "Orang tua",
+            emergencyPhone: "6281399990000",
+            notes: null,
+          },
+          lease: {
             startDate,
+            endDate: null,
             monthlyRent: room.monthlyPrice,
             billingDay,
             depositAmount: room.depositAmount,
-          })
-          .returning();
+            billingStartPeriod: room.code === "11" ? null : billingStart,
+          },
+          today,
+        });
+        invoiceCount += invoices.length;
 
-        // Tagihan: 3 periode terakhir yang jatuh temponya ≤ hari ini + 7 hari
-        const periods = [-2, -1, 0, 1]
-          .map((offset) => addMonths(periodOf(today), offset))
-          .filter((p) => p >= firstPeriod(startDate, billingDay))
-          .filter((p) => daysBetween(today, dueDate(p, billingDay)) <= 7)
-          .slice(-3);
+        const rows = await tx
+          .select()
+          .from(s.invoices)
+          .where(eq(s.invoices.tenantId, tenant.id))
+          .orderBy(asc(s.invoices.dueDate));
 
-        for (const [index, period] of periods.entries()) {
-          const due = dueDate(period, billingDay);
-          const isFirst = period === firstPeriod(startDate, billingDay);
-          const isLatest = index === periods.length - 1;
-          const amount = isFirst ? prorate(lease.monthlyRent, startDate) : lease.monthlyRent;
-
-          const [invoice] = await tx
-            .insert(s.invoices)
-            .values({
-              propertyId: property.id,
-              leaseId: lease.id,
-              tenantId: tenant.id,
-              roomId: room.id,
-              number: invoiceNumber(PROPERTY_CODE, period, room.code),
-              period,
-              issueDate: addDays(due, -7),
-              dueDate: due,
-            })
-            .returning();
-          invoiceCount++;
-
-          await tx.insert(s.invoiceItems).values({
-            invoiceId: invoice.id,
-            type: "rent",
-            description: `Sewa ${formatPeriod(period)}${isFirst ? " (prorata)" : ""}`,
-            amount,
-          });
-
-          // Periode lama selalu lunas; periode terbaru mengikuti skenario.
-          const effective: Scenario = isLatest ? scenario : "paid";
-          const pay = (value: number, status: "verified" | "pending", by: "staff" | "tenant") =>
+        for (const [index, invoice] of rows.entries()) {
+          const effective: Scenario = index === rows.length - 1 ? scenario : "paid";
+          const pay = (amount: number, status: "verified" | "pending", by: "staff" | "tenant") =>
             tx.insert(s.payments).values({
               propertyId: property.id,
               invoiceId: invoice.id,
               tenantId: tenant.id,
-              amount: value,
-              paidAt: new Date(`${addDays(due, -1)}T03:00:00Z`),
+              amount,
+              paidAt: new Date(`${addDays(invoice.dueDate, -1)}T03:00:00Z`),
               method: "transfer",
               status,
               submittedBy: by,
@@ -222,14 +186,13 @@ async function main() {
               verifiedAt: status === "verified" ? new Date() : null,
               proofPath: by === "tenant" ? `seed/${invoice.number}.jpg` : null,
             });
-
-          if (effective === "paid") await pay(amount, "verified", "staff");
-          if (effective === "partial") await pay(Math.round(amount / 2 / 1000) * 1000, "verified", "staff");
-          if (effective === "pending") await pay(amount, "pending", "tenant");
+          if (effective === "paid") await pay(invoice.total, "verified", "staff");
+          if (effective === "partial")
+            await pay(Math.round(invoice.total / 2 / 1000) * 1000, "verified", "staff");
+          if (effective === "pending") await pay(invoice.total, "pending", "tenant");
         }
       }
 
-      // Komplain
       const roomByCode = new Map(roomRows.map((r) => [r.code, r]));
       const complaintSeed = [
         {

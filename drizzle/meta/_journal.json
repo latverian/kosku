@@ -15,6 +15,20 @@
       "when": 1793782810593,
       "tag": "0001_triggers_and_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793785976648,
+      "tag": "0002_lease_billing_start",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793786005497,
+      "tag": "0003_payment_submitted_system",
+      "breakpoints": true
     }
   ]
 }

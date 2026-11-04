@@ -14,16 +14,18 @@ Estimasi untuk 1 developer paruh waktu (±15–20 jam/minggu). Setiap fase berak
 - [ ] Vercel preview per PR — aktif setelah repo dihubungkan ke Vercel
 - [x] `.env.example`, README cara setup
 
-## Fase 1 — MVP: tagihan & pembayaran (minggu 2–4)
-- [ ] Properti, pengaturan, rekening bank
-- [ ] CRUD kamar (+ tambah massal)
-- [ ] Penghuni + check-in / check-out / pindah kamar
-- [ ] `lib/billing` + unit test (jatuh tempo, prorata, status)
-- [ ] Job `generate_invoices` + `job_runs`
-- [ ] Daftar & detail tagihan, tambah item, koreksi, batalkan
-- [ ] Catat pembayaran manual, verifikasi, kredit kelebihan bayar
-- [ ] **Dashboard**: kartu ringkasan, kisi status kamar, perlu tindakan
-- [ ] Audit log
+## Fase 1 — MVP: tagihan & pembayaran (minggu 2–4) ✅ selesai
+- [x] Buat properti (onboarding akun baru), pengaturan, rekening bank (maks. 3)
+- [x] CRUD kamar (+ tambah massal), arsipkan kamar
+- [x] Penghuni + check-in (wizard 3 langkah, pratinjau tagihan pertama) / check-out / pindah kamar
+- [x] NIK disimpan terenkripsi (AES-256-GCM, `NIK_ENCRYPTION_KEY`)
+- [x] `lib/billing` + unit test (siklus, prorata, rencana tagihan, status)
+- [x] Job `generate_invoices` (Vercel Cron harian 07.00 WIB) + `job_runs`, tombol "Buat tagihan sekarang"
+- [x] Daftar & detail tagihan, tambah/hapus item, batalkan
+- [x] Catat pembayaran manual, verifikasi/tolak, saldo kelebihan bayar dipakai otomatis
+- [x] **Dashboard**: kartu ringkasan, kisi status kamar, perlu tindakan
+- [x] Audit log untuk semua perubahan penting
+- [ ] Upload foto KTP & bukti bayar → dipindah ke Fase 2 (butuh Supabase Storage, bersama portal penghuni)
 
 ✅ **Rilis v0.1**: pemilik bisa memakai Kosku menggantikan buku/Excel. Pengingat masih manual (tombol "Kirim WA" membuka `wa.me` dengan pesan terisi).
 

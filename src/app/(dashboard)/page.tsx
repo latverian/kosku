@@ -1,6 +1,7 @@
 import { Banknote, ChevronRight, CircleAlert, MessageCircleWarning, Plus, Wrench } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { STATUS_ICON, STATUS_TONE, StatusBadge, BADGE_LABEL } from "@/components/ui/status-badge";
@@ -14,7 +15,7 @@ export const metadata: Metadata = { title: "Dashboard" };
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   const property = await getActiveProperty(user.id);
-  if (!property) return <NoProperty />;
+  if (!property) redirect("/mulai");
 
   const data = await getDashboard(user.id, property);
   const percent = data.billed > 0 ? Math.round((data.received / data.billed) * 100) : 0;
@@ -68,7 +69,7 @@ export default async function DashboardPage() {
         <div className="space-y-4">
           <RoomGrid data={data} />
           {/* Aksi utama di HP, sesuai wireframe specs/06 § 4.1 (desktop: menu Pembayaran) */}
-          <Link href="/pembayaran" className={cn(buttonVariants({ size: "lg" }), "w-full lg:hidden")}>
+          <Link href="/pembayaran/catat" className={cn(buttonVariants({ size: "lg" }), "w-full lg:hidden")}>
             <Plus aria-hidden /> Catat Pembayaran
           </Link>
         </div>
@@ -334,29 +335,5 @@ function waLink(phone: string, text: string) {
 function EmptyState({ text }: { text: string }) {
   return (
     <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">{text}</p>
-  );
-}
-
-function NoProperty() {
-  return (
-    <Card className="mx-auto max-w-lg">
-      <CardHeader>
-        <CardTitle>Selamat datang di Kosku 👋</CardTitle>
-        <CardDescription>Akun kamu belum terhubung ke kos mana pun.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3 text-sm">
-        <ol className="list-decimal space-y-1.5 pl-5">
-          <li>Buat properti (nama kos, alamat, kode singkat)</li>
-          <li>Tambah rekening bank tujuan transfer</li>
-          <li>Tambah kamar</li>
-          <li>Check-in penghuni yang sudah ada</li>
-          <li>Hubungkan WhatsApp</li>
-        </ol>
-        <p className="rounded-lg bg-muted p-3 text-muted-foreground">
-          Formulir tambah properti hadir di Fase 1. Untuk mencoba sekarang, jalankan{" "}
-          <code className="text-xs">SEED_OWNER_EMAIL=email-kamu pnpm db:seed</code> untuk mengisi data contoh.
-        </p>
-      </CardContent>
-    </Card>
   );
 }

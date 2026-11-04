@@ -16,7 +16,7 @@
 | Tanggal | **date-fns + date-fns-tz** | Perhitungan jatuh tempo dan zona waktu WIB/WITA/WIT |
 | WhatsApp | **Fonnte** (default), siap diganti **WhatsApp Cloud API** | Murah, mudah, nomor biasa |
 | Payment gateway (fase 3) | **Midtrans** atau **Xendit** | VA, QRIS, e-wallet, webhook |
-| Penjadwal (cron) | **Supabase pg_cron** → memanggil endpoint Next.js | Andal, tidak bergantung batas cron Vercel gratis |
+| Penjadwal (cron) | **Vercel Cron** (`vercel.json`) → endpoint Next.js | Cron harian gratis di Vercel Hobby; `pg_cron` Supabase bisa dipakai bila butuh lebih sering |
 | Ekspor | **ExcelJS** (xlsx), **@react-pdf/renderer** (PDF) | Laporan & kuitansi |
 | Testing | **Vitest** (unit), **Playwright** (E2E) | Cepat, standar ekosistem TS |
 | Monitoring | **Sentry** (tier gratis) | Lacak error produksi |

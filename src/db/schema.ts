@@ -270,6 +270,8 @@ export const leases = pgTable(
     endDate: date("end_date"),
     monthlyRent: money("monthly_rent").notNull(),
     billingDay: smallint("billing_day").notNull(),
+    /** Penghuni lama yang baru dimasukkan: periode sebelum ini tidak ditagih. */
+    billingStartPeriod: date("billing_start_period"),
     depositAmount: money("deposit_amount").notNull().default(0),
     depositStatus: depositStatus("deposit_status").notNull().default("held"),
     depositRefunded: money("deposit_refunded").notNull().default(0),
@@ -309,6 +311,9 @@ export const invoices = pgTable(
     period: date("period").notNull(),
     issueDate: date("issue_date").notNull(),
     dueDate: date("due_date").notNull(),
+    /** Rentang siklus yang ditagih: [covers_from, covers_to) */
+    coversFrom: date("covers_from"),
+    coversTo: date("covers_to"),
     total: money("total").notNull().default(0),
     paidAmount: money("paid_amount").notNull().default(0),
     status: invoiceStatus("status").notNull().default("issued"),
@@ -374,7 +379,7 @@ export const payments = pgTable(
     index("payments_invoice_idx").on(t.invoiceId),
     index("payments_property_status_idx").on(t.propertyId, t.status),
     check("payments_amount_positive", sql`${t.amount} > 0`),
-    check("payments_submitted_by", sql`${t.submittedBy} in ('tenant', 'staff', 'gateway')`),
+    check("payments_submitted_by", sql`${t.submittedBy} in ('tenant', 'staff', 'gateway', 'system')`),
   ],
 );
 

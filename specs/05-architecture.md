@@ -52,7 +52,9 @@ flowchart LR
 
 ## 2. Job terjadwal
 
-`pg_cron` di Supabase memanggil endpoint Next.js dengan header `Authorization: Bearer <CRON_SECRET>`.
+**Vercel Cron** (`vercel.json`) memanggil endpoint Next.js dengan header `Authorization: Bearer <CRON_SECRET>` (dikirim otomatis oleh Vercel bila env `CRON_SECRET` diisi). Vercel Hobby hanya mengizinkan cron harian; untuk job yang lebih sering (`send_messages` tiap 5 menit di Fase 2) pakai `pg_cron` Supabase atau Vercel Pro.
+
+> **Status Fase 1:** baru `generate_invoices` (`/api/cron/generate-invoices`, `0 0 * * *` UTC = 07.00 WIB). Logika ada di `src/services/jobs.ts` dan `src/services/billing.ts`.
 
 | Job | Jadwal (WIB) | Endpoint | Tugas |
 |---|---|---|---|
