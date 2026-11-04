@@ -64,6 +64,16 @@ SEED_OWNER_EMAIL=saya@lokal.test pnpm db:seed
 
 Lalu isi `KOSKU_DEV_PREVIEW_USER_ID=<id dari perintah di atas>` di `.env.local` dan jalankan `pnpm dev`. Mode ini **tidak pernah aktif di production**.
 
+## Upgrade dari Fase 0 (data contoh lama)
+
+Data contoh "Kos Melati" dari Fase 0 dibuat sebelum ada aturan "penghuni lama", sehingga job harian akan menagih mundur sampai 20 bulan dan memberi denda. Sebelum menjalankan job harian atau "Buat tagihan sekarang", ganti data contohnya:
+
+1. Supabase → **SQL Editor** → tempel isi `scripts/db/hapus-data-contoh.sql` → **Run** (hanya menghapus kos berkode `MLT`).
+2. Isi ulang data contoh versi baru:
+   ```bash
+   SEED_OWNER_EMAIL=email-kamu@contoh.com pnpm db:seed
+   ```
+
 ## Perintah
 
 | Perintah                                       | Fungsi                                                       |
