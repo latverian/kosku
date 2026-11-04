@@ -7,14 +7,18 @@ import { CreatePropertyForm } from "./property-form";
 
 export const metadata: Metadata = { title: "Buat kos" };
 
-export default async function StartPage() {
+export default async function StartPage({ searchParams }: PageProps<"/mulai">) {
+  const { baru } = await searchParams;
   const user = await getCurrentUser();
-  if (await getActiveProperty(user.id)) redirect("/");
+  const existing = await getActiveProperty(user.id);
+  if (existing && baru !== "1") redirect("/");
 
   return (
     <Card className="mx-auto max-w-lg">
       <CardHeader>
-        <CardTitle className="text-xl">Selamat datang di Kosku 👋</CardTitle>
+        <CardTitle className="text-xl">
+          {existing ? "Tambah kos baru" : "Selamat datang di Kosku 👋"}
+        </CardTitle>
         <CardDescription>
           Langkah 1 dari 3: isi data kos kamu. Setelah ini, tambah rekening bank lalu kamar.
         </CardDescription>

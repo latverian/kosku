@@ -37,6 +37,11 @@
   --status-pending-bg: #fef9c3;
   --status-muted: #6b7280;
   --status-muted-bg: #f3f4f6;
+
+  /* Seri grafik — palet kategorikal tervalidasi (skill dataviz), urutan tetap */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --chart-grid: #e7e5e4;
 }
 
 .dark {
@@ -70,6 +75,10 @@
   --status-pending-bg: #713f1266;
   --status-muted: #9ca3af;
   --status-muted-bg: #37415166;
+
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --chart-grid: #2f3542;
 }
 
 @theme inline {

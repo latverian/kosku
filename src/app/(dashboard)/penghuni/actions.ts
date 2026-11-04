@@ -22,7 +22,8 @@ import { attempt, formValues, parseForm, requireContext } from "@/server/actions
 import type { FormState } from "@/server/form-state";
 import { dispatchSoon } from "@/server/dispatch";
 import { configFromEnv, rotatePortalLink } from "@/services/messaging";
-import { checkIn, checkOut, moveRoom, setRemindersMuted, updateTenant } from "@/services/tenants";
+import { filesOf, saveUpload } from "@/server/uploads";
+import { checkIn, checkOut, moveRoom, setIdCard, setRemindersMuted, updateTenant } from "@/services/tenants";
 
 const nik = z
   .preprocess((v) => (typeof v === "string" ? v.replace(/\D/g, "") : v), z.string())
@@ -208,5 +209,18 @@ export async function muteAction(_prev: FormState, formData: FormData): Promise<
       ok: true,
       message: muted ? "Pengingat otomatis dimatikan untuk penghuni ini." : "Pengingat otomatis aktif lagi.",
     };
+  });
+}
+
+export async function uploadIdCardAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const { user, property, actor } = await requireContext();
+  const tenantId = String(formData.get("tenantId"));
+  return attempt(async () => {
+    const [file] = filesOf(formData, "idCard");
+    if (!file) return { error: "Pilih foto KTP.", fieldErrors: { idCard: "Pilih foto KTP" } };
+    const upload = await saveUpload("id-cards", property.id, file, "idCard");
+    await asUser(user.id, (tx) => setIdCard(tx, actor, tenantId, upload.path));
+    revalidatePath(`/penghuni/${tenantId}`);
+    return { ok: true, message: "Foto KTP disimpan (privat)." };
   });
 }

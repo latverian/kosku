@@ -13,7 +13,8 @@ import { DEPOSIT_STATUS_LABEL } from "@/lib/labels";
 import { requireContext } from "@/server/actions";
 import { getTenantDetail, listAvailableRooms } from "@/services/tenants";
 import { configFromEnv, ensurePortalLink } from "@/services/messaging";
-import { CheckOutForm, EditTenantForm, MoveRoomForm, MuteToggle, PortalLinkCard } from "./forms";
+import { signedUrl } from "@/server/uploads";
+import { CheckOutForm, EditTenantForm, IdCardForm, MoveRoomForm, MuteToggle, PortalLinkCard } from "./forms";
 
 export const metadata: Metadata = { title: "Penghuni" };
 
@@ -29,11 +30,12 @@ export default async function TenantDetailPage({ params, searchParams }: PagePro
           ...detail,
           rooms: detail.activeLease ? await listAvailableRooms(tx, property.id) : [],
           portalUrl: await ensurePortalLink(tx, id, configFromEnv()),
+          idCardUrl: await signedUrl("id-cards", detail.tenant.idCardPath),
         }
       : null;
   });
   if (!data) notFound();
-  const { tenant, activeLease, leases, invoices, credit, rooms, portalUrl } = data;
+  const { tenant, activeLease, leases, invoices, credit, rooms, portalUrl, idCardUrl } = data;
   const today = todayIn(property.timezone);
   const outstanding = invoices
     .filter((i) => i.status === "issued" || i.status === "partial")
@@ -155,6 +157,14 @@ export default async function TenantDetailPage({ params, searchParams }: PagePro
                 name={tenant.fullName.split(" ")[0]}
               />
               <MuteToggle tenantId={tenant.id} muted={tenant.remindersMuted} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Foto KTP</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <IdCardForm tenantId={tenant.id} url={idCardUrl} />
             </CardContent>
           </Card>
           <Card>

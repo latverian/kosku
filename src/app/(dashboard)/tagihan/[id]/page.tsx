@@ -1,4 +1,4 @@
-import { MessageCircle } from "lucide-react";
+import { FileText, MessageCircle } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -206,6 +206,15 @@ export default async function InvoiceDetailPage({ params, searchParams }: PagePr
                 />
               </CardContent>
             </Card>
+          )}
+          {invoice.status !== "void" && (
+            <a
+              href={`/api/invoices/${invoice.id}/pdf`}
+              target="_blank"
+              className={cn(buttonVariants({ variant: "outline" }), "w-full")}
+            >
+              <FileText aria-hidden /> {invoice.status === "paid" ? "Kuitansi PDF" : "Tagihan PDF"}
+            </a>
           )}
           {remaining > 0 && invoice.status !== "void" && <RemindNowButton invoiceId={invoice.id} />}
           {remaining > 0 && invoice.status !== "void" && (

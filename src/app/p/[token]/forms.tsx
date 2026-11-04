@@ -10,7 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { compressImage } from "@/lib/image-compress";
 import { cn } from "@/lib/utils";
 import type { FormState } from "@/server/form-state";
-import { commentAction, createComplaintAction, rateAction, uploadProofAction } from "./actions";
+import {
+  commentAction,
+  createComplaintAction,
+  payOnlineAction,
+  rateAction,
+  uploadProofAction,
+} from "./actions";
 
 export function CopyButton({ text, label = "Salin" }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
@@ -270,6 +276,21 @@ export function RatingForm({
           </button>
         ))}
       </div>
+      <FormAlert state={state} />
+    </form>
+  );
+}
+
+export function PayOnlineButton({ token, invoiceId }: { token: string; invoiceId: string }) {
+  const [state, action] = useActionState(payOnlineAction, undefined);
+  return (
+    <form action={action} className="space-y-2">
+      <input type="hidden" name="token" value={token} />
+      <input type="hidden" name="invoiceId" value={invoiceId} />
+      <SubmitButton className="w-full" pendingText="Membuka halaman bayar…">
+        Bayar online (VA / QRIS / e-wallet)
+      </SubmitButton>
+      <p className="text-center text-xs text-muted-foreground">Lunas otomatis begitu pembayaran berhasil.</p>
       <FormAlert state={state} />
     </form>
   );

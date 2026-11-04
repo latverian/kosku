@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, isActive } from "./nav-items";
 
-export function Sidebar() {
+export function Sidebar({ canViewFinance }: { canViewFinance: boolean }) {
   const pathname = usePathname();
   return (
     <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r bg-card lg:flex">
@@ -17,7 +17,7 @@ export function Sidebar() {
         Kosku
       </Link>
       <nav aria-label="Menu utama" className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        {NAV_ITEMS.filter((item) => !item.ownerOnly || canViewFinance).map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (
             <Link

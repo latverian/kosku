@@ -11,6 +11,7 @@ import {
   muteAction,
   rotatePortalAction,
   updateTenantAction,
+  uploadIdCardAction,
 } from "../actions";
 
 type Tenant = {
@@ -330,6 +331,43 @@ export function MuteToggle({ tenantId, muted }: { tenantId: string; muted: boole
         Misalnya bila penghuni sudah izin bayar telat. Konfirmasi pembayaran tetap dikirim.
       </p>
       <FormAlert state={state} />
+    </form>
+  );
+}
+
+export function IdCardForm({ tenantId, url }: { tenantId: string; url: string | null }) {
+  const [state, action] = useActionState(uploadIdCardAction, undefined);
+  return (
+    <form action={action} className="space-y-2 text-sm">
+      <input type="hidden" name="tenantId" value={tenantId} />
+      {url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-primary hover:underline"
+        >
+          Lihat foto KTP (link 10 menit)
+        </a>
+      ) : (
+        <p className="text-muted-foreground">Belum ada foto KTP.</p>
+      )}
+      <Field label={url ? "Ganti foto KTP" : "Unggah foto KTP"} name="idCard" state={state} htmlFor="id-card">
+        <input
+          id="id-card"
+          name="idCard"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="block w-full text-sm"
+        />
+      </Field>
+      <FormAlert state={state} />
+      <SubmitButton size="sm" variant="outline">
+        Simpan
+      </SubmitButton>
+      <p className="text-xs text-muted-foreground">
+        Disimpan di penyimpanan privat, hanya bisa dibuka lewat link sementara.
+      </p>
     </form>
   );
 }

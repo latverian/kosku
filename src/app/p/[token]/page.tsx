@@ -11,7 +11,8 @@ import { cn } from "@/lib/utils";
 import { getPortal } from "@/server/portal";
 import { listComplaints, STATUS_LABEL } from "@/services/complaints";
 import { portalInvoices } from "@/services/portal";
-import { ComplaintForm, CopyButton, UploadProofForm } from "./forms";
+import { gatewayFromEnv } from "@/services/gateway";
+import { ComplaintForm, CopyButton, PayOnlineButton, UploadProofForm } from "./forms";
 
 export default async function PortalPage({ params, searchParams }: PageProps<"/p/[token]">) {
   const { token } = await params;
@@ -27,6 +28,7 @@ export default async function PortalPage({ params, searchParams }: PageProps<"/p
     .filter((i) => i.status === "issued" || i.status === "partial")
     .sort((a, b) => (a.dueDate < b.dueDate ? -1 : 1));
   const history = invoices.filter((i) => i.status === "paid");
+  const onlinePayment = Boolean(gatewayFromEnv());
 
   return (
     <>
@@ -41,6 +43,12 @@ export default async function PortalPage({ params, searchParams }: PageProps<"/p
         )}
       </div>
 
+      {sp.bayar === "1" && (
+        <p role="status" className="rounded-lg bg-status-upcoming-bg p-3 text-sm text-status-upcoming">
+          Terima kasih! Status tagihan berubah otomatis begitu pembayaran dikonfirmasi (biasanya beberapa
+          detik–menit).
+        </p>
+      )}
       {sp.terkirim === "1" && (
         <p role="status" className="rounded-lg bg-status-paid-bg p-3 text-sm text-status-paid">
           Bukti bayar terkirim ✅ Pengelola akan memverifikasi dan kamu akan dapat konfirmasi lewat WhatsApp.
@@ -92,6 +100,16 @@ export default async function PortalPage({ params, searchParams }: PageProps<"/p
                         </div>
                       ))}
                     </div>
+                  )}
+                  <a
+                    href={`/p/${token}/tagihan/${inv.id}/pdf`}
+                    target="_blank"
+                    className="block text-sm font-medium text-primary hover:underline"
+                  >
+                    Unduh tagihan (PDF)
+                  </a>
+                  {onlinePayment && pending.length === 0 && (
+                    <PayOnlineButton token={token} invoiceId={inv.id} />
                   )}
                   {pending.length > 0 ? (
                     <p className="rounded-lg bg-status-pending-bg p-3 text-sm text-status-pending">
@@ -188,7 +206,16 @@ export default async function PortalPage({ params, searchParams }: PageProps<"/p
                     Lunas {inv.paidAt ? formatDate(inv.paidAt, portal.timezone) : ""}
                   </span>
                 </span>
-                <span className="tabular">{formatRupiah(inv.total)}</span>
+                <span className="flex items-center gap-3">
+                  <span className="tabular">{formatRupiah(inv.total)}</span>
+                  <a
+                    href={`/p/${token}/tagihan/${inv.id}/pdf`}
+                    target="_blank"
+                    className="text-xs font-medium text-primary hover:underline"
+                  >
+                    Kuitansi
+                  </a>
+                </span>
               </div>
             ))}
           </Card>

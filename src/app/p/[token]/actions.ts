@@ -12,6 +12,8 @@ import { getPortal } from "@/server/portal";
 import { filesOf, saveUpload } from "@/server/uploads";
 import { addComplaintComment, createComplaint, rateComplaint } from "@/services/complaints";
 import { ServiceError } from "@/services/core";
+import { gatewayFromEnv } from "@/services/gateway";
+import { startOnlinePayment } from "@/services/online-payment";
 import { submitPaymentProof } from "@/services/portal";
 
 async function session(formData: FormData) {
@@ -123,4 +125,24 @@ export async function rateAction(_prev: FormState, formData: FormData): Promise<
     revalidatePath(`/p/${s.token}/komplain/${complaintId}`);
     return { ok: true, message: "Terima kasih atas penilaiannya!" };
   });
+}
+
+export async function payOnlineAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const invoiceId = String(formData.get("invoiceId"));
+  let url = "";
+  const result = await attempt(async () => {
+    const s = await session(formData);
+    const gateway = gatewayFromEnv();
+    if (!gateway) throw new ServiceError("Pembayaran online belum tersedia. Silakan transfer manual.");
+    const appUrl = (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
+    url = await adminDb().transaction((tx) =>
+      startOnlinePayment(tx, gateway, {
+        tenantId: s.portal.tenantId,
+        invoiceId,
+        finishUrl: `${appUrl}/p/${s.token}?bayar=1`,
+      }),
+    );
+  });
+  if (result?.error) return result;
+  redirect(url);
 }

@@ -2,7 +2,7 @@
 
 **Sistem manajemen kos**: tagihan bulanan otomatis, pengingat WhatsApp, dashboard status pembayaran, portal penghuni, dan pengelolaan komplain.
 
-> Status: **Fase 1 selesai**: kamar, penghuni (check-in/out, pindah kamar), tagihan otomatis, pembayaran & verifikasi, pengaturan. Berikutnya Fase 2 (pengingat WhatsApp, portal penghuni, komplain). Lihat [roadmap](specs/08-roadmap.md).
+> Status: **v1.0 (Fase 0–3 selesai)**: kamar, penghuni, tagihan otomatis, pembayaran (manual & Midtrans), pengingat WhatsApp, portal penghuni, komplain, laporan keuangan & ekspor, tim, multi-kos. Lihat [roadmap](specs/08-roadmap.md).
 
 ## Fitur utama
 
@@ -140,6 +140,22 @@ Tanpa `FONNTE_TOKEN`, di development pesan hanya dicetak di log server; di produ
 
 - Isi `PORTAL_SECRET` (min. 16 karakter). Link portal tiap penghuni ada di halaman detail penghuni dan otomatis masuk ke pesan WA. **Buat link baru** mencabut link lama.
 - Foto bukti bayar & komplain disimpan di Supabase Storage (bucket privat, dibuat oleh migrasi). Isi `SUPABASE_SERVICE_ROLE_KEY`. Tanpa itu, di development file disimpan di `.data/uploads`.
+
+## Pembayaran online (Midtrans)
+
+1. Daftar di [midtrans.com](https://midtrans.com) (mulai dengan **Sandbox**).
+2. Salin **Server Key** ke `MIDTRANS_SERVER_KEY` (`MIDTRANS_IS_PRODUCTION=false` untuk sandbox).
+3. Di dashboard Midtrans → **Settings → Payment → Notification URL**: `https://DOMAIN/api/webhooks/payment`.
+4. Penghuni akan melihat tombol **Bayar online (VA / QRIS / e-wallet)** di portal; tagihan lunas otomatis setelah pembayaran berhasil. Nominal selalu dicek ulang ke API Midtrans, bukan diambil dari isi notifikasi.
+
+## Laporan & ekspor
+
+Menu **Keuangan**: laba-rugi bulanan (berbasis tanggal bayar), pengeluaran + foto nota, umur tunggakan, grafik 12 bulan. Ekspor Excel/PDF tersedia di halaman itu; PDF tagihan/kuitansi ada di detail tagihan dan portal penghuni.
+
+## Tim & beberapa kos
+
+- **Pengaturan → Tim pengelola**: tambahkan pengelola dengan email (mereka daftar akun dulu). Izin keuangan bisa diberi/dicabut per orang.
+- Klik nama kos di header untuk berpindah kos atau **+ Tambah kos baru**.
 
 ## Deploy ke Vercel
 

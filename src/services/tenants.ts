@@ -396,3 +396,18 @@ export async function setRemindersMuted(tx: Tx, actor: Actor, tenantId: string, 
     entityId: tenantId,
   });
 }
+
+export async function setIdCard(tx: Tx, actor: Actor, tenantId: string, path: string | null) {
+  const [row] = await tx
+    .update(tenants)
+    .set({ idCardPath: path })
+    .where(eq(tenants.id, tenantId))
+    .returning();
+  must(row, "Penghuni");
+  await audit(tx, actor, {
+    propertyId: row.propertyId,
+    action: path ? "tenant.id_card" : "tenant.id_card_remove",
+    entityType: "tenant",
+    entityId: tenantId,
+  });
+}

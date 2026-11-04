@@ -8,7 +8,7 @@ import { STATUS_ICON, STATUS_TONE, StatusBadge, BADGE_LABEL } from "@/components
 import { formatDate, formatRupiah, formatRupiahShort } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { getCurrentUser } from "@/server/auth";
-import { getActiveProperty, getDashboard, type DashboardData } from "@/server/dashboard";
+import { getActiveProperty, getDashboard, getJobHealth, type DashboardData } from "@/server/dashboard";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -18,12 +18,35 @@ export default async function DashboardPage() {
   if (!property) redirect("/mulai");
 
   const data = await getDashboard(user.id, property);
+  const health = await getJobHealth(user.id, property.id);
   const percent = data.billed > 0 ? Math.round((data.received / data.billed) * 100) : 0;
   const occupancy = data.roomsTotal > 0 ? Math.round((data.roomsOccupied / data.roomsTotal) * 100) : 0;
 
   return (
     <div className="space-y-4 lg:space-y-6">
       <h1 className="sr-only">Dashboard {property.name}</h1>
+      {health.failed && (
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-lg bg-status-overdue-bg p-3 text-sm text-status-overdue"
+        >
+          <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>
+            Job otomatis <strong>{health.failed.job}</strong> gagal (
+            {formatDate(health.failed.at, property.timezone)}): {health.failed.error ?? "tanpa keterangan"}.
+            Tagihan atau pengingat mungkin belum dibuat.
+          </span>
+        </p>
+      )}
+      {!health.failed && health.stale && (
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-lg bg-status-pending-bg p-3 text-sm text-status-pending"
+        >
+          <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+          Job harian belum berjalan lebih dari 26 jam. Periksa CRON_SECRET dan jadwal cron di Vercel.
+        </p>
+      )}
 
       {/* Kartu ringkasan — FR-6.1, FR-6.2 */}
       <section aria-label="Ringkasan bulan ini" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">

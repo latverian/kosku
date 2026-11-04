@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { ACTIVE_PROPERTY_COOKIE } from "@/server/dashboard";
 import { z } from "zod";
 import { asUser } from "@/db";
 import {
@@ -40,7 +42,14 @@ export async function createPropertyAction(_prev: FormState, formData: FormData)
   const data = parsed.data;
   const result = await attempt(
     async () => {
-      await asUser(user.id, (tx) => createProperty(tx, { type: "user", id: user.id }, data));
+      const created = await asUser(user.id, (tx) => createProperty(tx, { type: "user", id: user.id }, data));
+      // Kos baru langsung jadi kos aktif
+      (await cookies()).set(ACTIVE_PROPERTY_COOKIE, created.id, {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+      });
     },
     {
       values: formValues(formData),

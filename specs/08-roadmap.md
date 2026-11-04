@@ -45,14 +45,17 @@ Estimasi untuk 1 developer paruh waktu (±15–20 jam/minggu). Setiap fase berak
 
 ✅ **Rilis v0.2**: penagihan berjalan otomatis, penghuni punya portal.
 
-## Fase 3 — Keuangan & otomasi penuh (minggu 8–10)
-- [ ] Pengeluaran + foto nota, biaya komplain → pengeluaran
-- [ ] Laporan bulanan/tahunan, aging tunggakan, grafik 12 bulan
-- [ ] Ekspor Excel & PDF, PDF tagihan & kuitansi
-- [ ] Payment gateway (Midtrans/Xendit): link bayar di WA, webhook → lunas otomatis
-- [ ] Peran manager + izin keuangan, undang anggota tim
-- [ ] UI multi-properti (pilih properti di header)
-- [ ] Sentry + peringatan job gagal
+## Fase 3 — Keuangan & otomasi penuh (minggu 8–10) ✅ selesai
+- [x] Pengeluaran + foto nota, biaya komplain → pengeluaran
+- [x] Laporan bulanan (laba-rugi kas per metode/kategori), 12 bulan, umur tunggakan, grafik pemasukan vs pengeluaran
+- [x] Ekspor Excel (bulanan, 12 bulan, tunggakan) & PDF (laporan bulanan), PDF tagihan & kuitansi (staf & portal; `{link_kuitansi}` di WA)
+- [x] Payment gateway Midtrans Snap: tombol bayar di portal, webhook (signature + cek status ulang) → lunas otomatis, idempoten
+- [x] Peran pengelola + izin keuangan, tambah/hapus anggota tim (pengelola daftar akun dulu)
+- [x] Multi-properti: pilih kos di header, tambah kos lain
+- [x] Peringatan job gagal / tidak berjalan > 26 jam di dashboard
+- [x] Foto KTP (bucket privat) & webhook status pesan Fonnte (terkirim → dibaca)
+- [ ] Sentry → belum (butuh akun Sentry; error tetap tercatat di log Vercel)
+- [ ] Grafik ditagihkan vs diterima di dashboard → tersedia di Keuangan (tabel 12 bulan)
 
 ✅ **Rilis v1.0**
 

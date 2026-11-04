@@ -25,6 +25,7 @@ import {
 } from "@/db/schema";
 import { addDays, todayIn, type IsoDate } from "@/lib/billing";
 import { formatRupiah } from "@/lib/format";
+import { shouldAdvance, type DeliveryStatus } from "@/lib/messaging/provider-status";
 import { nextAllowedTime, reminderDue } from "@/lib/messaging/schedule";
 import {
   DEFAULT_TEMPLATES,
@@ -217,7 +218,8 @@ async function invoiceContext(tx: Tx, invoiceId: string, cfg: MessagingConfig, t
     .select({ total: sql<number>`coalesce(sum(${invoiceItems.amount}), 0)`.mapWith(Number) })
     .from(invoiceItems)
     .where(and(eq(invoiceItems.invoiceId, invoiceId), eq(invoiceItems.type, "late_fee")));
-  const portal = (await ensurePortalLink(tx, ctx.tenant.id, cfg)) ?? "(hubungi pengelola)";
+  const portalLink = await ensurePortalLink(tx, ctx.tenant.id, cfg);
+  const portal = portalLink ?? "(hubungi pengelola)";
   const vars = invoiceVars({
     tenantName: ctx.tenant.fullName,
     roomCode: ctx.roomCode,
@@ -232,6 +234,8 @@ async function invoiceContext(tx: Tx, invoiceId: string, cfg: MessagingConfig, t
     portalUrl: portal,
     today: today ?? todayIn(ctx.property.timezone),
   });
+  // Kuitansi PDF langsung dari portal penghuni
+  if (portalLink) vars.link_kuitansi = `${portalLink}/tagihan/${invoiceId}/pdf`;
   return { ...ctx, vars };
 }
 
@@ -674,4 +678,15 @@ export async function messageCounts(tx: Tx, propertyId: string) {
     .groupBy(messages.status)
     .orderBy(asc(messages.status));
   return Object.fromEntries(rows.map((r) => [r.status, r.count])) as Partial<Record<string, number>>;
+}
+
+/** Webhook status dari penyedia (mis. Fonnte): perbarui status pesan bila maju. */
+export async function updateDeliveryStatus(db: Db, providerMessageId: string, status: DeliveryStatus) {
+  const [msg] = await db
+    .select({ id: messages.id, status: messages.status })
+    .from(messages)
+    .where(eq(messages.providerMessageId, providerMessageId));
+  if (!msg || !shouldAdvance(msg.status, status)) return false;
+  await db.update(messages).set({ status }).where(eq(messages.id, msg.id));
+  return true;
 }

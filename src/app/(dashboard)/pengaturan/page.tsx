@@ -56,14 +56,18 @@ export default async function SettingsPage({ searchParams }: PageProps<"/pengatu
 
       <Card>
         <CardHeader>
-          <CardTitle>Segera hadir</CardTitle>
-          <CardDescription>
-            Jadwal pengingat & koneksi WhatsApp (Fase 2), kelola tim pengelola (Fase 3).
-          </CardDescription>
+          <CardTitle>Lainnya</CardTitle>
+          <CardDescription>Atur tim, jadwal pengingat, dan koneksi WhatsApp.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Link href="/" className={buttonVariants({ variant: "outline" })}>
-            Kembali ke dashboard
+        <CardContent className="flex flex-wrap gap-2">
+          <Link href="/pengaturan/tim" className={buttonVariants({ variant: "outline" })}>
+            Tim pengelola
+          </Link>
+          <Link href="/pesan?tab=pengaturan" className={buttonVariants({ variant: "outline" })}>
+            Pengingat & WhatsApp
+          </Link>
+          <Link href="/mulai?baru=1" className={buttonVariants({ variant: "outline" })}>
+            Tambah kos lain
           </Link>
         </CardContent>
       </Card>
