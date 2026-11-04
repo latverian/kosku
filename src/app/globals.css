@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+/* Mode gelap via class (next-themes) — specs/06-ui-design.md § 2 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --radius: 0.75rem;
+
+  --background: oklch(0.985 0.002 247);
+  --foreground: oklch(0.21 0.02 265);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --muted: oklch(0.96 0.005 247);
+  --muted-foreground: oklch(0.5 0.02 257);
+  --border: oklch(0.92 0.006 255);
+  --input: oklch(0.88 0.008 255);
+  --ring: oklch(0.55 0.18 262);
+  --primary: oklch(0.49 0.2 262);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.95 0.01 255);
+  --secondary-foreground: var(--foreground);
+  --accent: oklch(0.95 0.02 262);
+  --accent-foreground: oklch(0.38 0.17 262);
+  --destructive: oklch(0.55 0.21 27);
+  --destructive-foreground: oklch(0.99 0 0);
+
+  /* Warna status — selalu dipakai bersama ikon/teks */
+  --status-paid: #16a34a;
+  --status-paid-bg: #dcfce7;
+  --status-upcoming: #2563eb;
+  --status-upcoming-bg: #dbeafe;
+  --status-partial: #ea580c;
+  --status-partial-bg: #ffedd5;
+  --status-overdue: #dc2626;
+  --status-overdue-bg: #fee2e2;
+  --status-pending: #a16207;
+  --status-pending-bg: #fef9c3;
+  --status-muted: #6b7280;
+  --status-muted-bg: #f3f4f6;
+}
+
+.dark {
+  --background: oklch(0.17 0.015 265);
+  --foreground: oklch(0.96 0.005 255);
+  --card: oklch(0.21 0.018 265);
+  --card-foreground: var(--foreground);
+  --muted: oklch(0.25 0.018 265);
+  --muted-foreground: oklch(0.7 0.015 257);
+  --border: oklch(0.3 0.018 265);
+  --input: oklch(0.35 0.02 265);
+  --ring: oklch(0.68 0.16 262);
+  --primary: oklch(0.66 0.17 262);
+  --primary-foreground: oklch(0.16 0.02 265);
+  --secondary: oklch(0.27 0.02 265);
+  --secondary-foreground: var(--foreground);
+  --accent: oklch(0.3 0.05 262);
+  --accent-foreground: oklch(0.88 0.06 262);
+  --destructive: oklch(0.65 0.2 25);
+  --destructive-foreground: oklch(0.16 0.02 265);
+
+  --status-paid: #4ade80;
+  --status-paid-bg: #14532d66;
+  --status-upcoming: #60a5fa;
+  --status-upcoming-bg: #1e3a8a66;
+  --status-partial: #fb923c;
+  --status-partial-bg: #7c2d1266;
+  --status-overdue: #f87171;
+  --status-overdue-bg: #7f1d1d66;
+  --status-pending: #facc15;
+  --status-pending-bg: #713f1266;
+  --status-muted: #9ca3af;
+  --status-muted-bg: #37415166;
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-status-paid: var(--status-paid);
+  --color-status-paid-bg: var(--status-paid-bg);
+  --color-status-upcoming: var(--status-upcoming);
+  --color-status-upcoming-bg: var(--status-upcoming-bg);
+  --color-status-partial: var(--status-partial);
+  --color-status-partial-bg: var(--status-partial-bg);
+  --color-status-overdue: var(--status-overdue);
+  --color-status-overdue-bg: var(--status-overdue-bg);
+  --color-status-pending: var(--status-pending);
+  --color-status-pending-bg: var(--status-pending-bg);
+  --color-status-muted: var(--status-muted);
+  --color-status-muted-bg: var(--status-muted-bg);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-size: 16px;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}

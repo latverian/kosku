@@ -156,6 +156,7 @@ erDiagram
 | timezone | text not null default `'Asia/Jakarta'` | |
 | contact_phone | text | no. WA pengelola yang tampil ke penghuni |
 | rules | text | aturan kos (markdown), tampil di portal |
+| created_by | uuid default `auth.uid()` | pembuat; trigger menjadikannya owner. Dibutuhkan agar `INSERT ... RETURNING` lolos RLS sebelum keanggotaan dibuat |
 | archived_at | timestamptz | |
 
 **`property_members`**
@@ -236,12 +237,7 @@ erDiagram
 | status | lease_status default `active` | |
 | ended_reason | text | |
 
-Constraint penting:
-```sql
--- satu sewa aktif per kamar (untuk kamar kapasitas 1; kamar sharing dicek di aplikasi)
-CREATE UNIQUE INDEX one_active_lease_per_room
-  ON leases(room_id) WHERE status = 'active';
-```
+Constraint penting: trigger `check_room_capacity` menolak sewa aktif baru jika jumlah sewa aktif di kamar sudah mencapai `rooms.capacity` (baris kamar dikunci `FOR UPDATE` agar dua check-in bersamaan tidak lolos). Trigger `sync_room_status` menjaga `rooms.status` = `occupied`/`vacant` mengikuti sewa aktif.
 
 ### 3.3 Tagihan & pembayaran
 

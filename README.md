@@ -2,9 +2,10 @@
 
 **Sistem manajemen kos**: tagihan bulanan otomatis, pengingat WhatsApp, dashboard status pembayaran, portal penghuni, dan pengelolaan komplain.
 
-> Status: **tahap perancangan**. Belum ada kode aplikasi. Lihat dokumen spesifikasi di bawah.
+> Status: **Fase 0 selesai** (fondasi: project, database, login, dashboard). Lihat [roadmap](specs/08-roadmap.md).
 
 ## Fitur utama
+
 - 🚪 Data kamar, penghuni, dan kontrak sewa (check-in / check-out)
 - 🧾 Tagihan bulanan dibuat otomatis, plus item tambahan & denda
 - 💬 Pengingat WhatsApp otomatis (H-3, H, H+1, H+3, H+7) dan konfirmasi lunas
@@ -14,17 +15,106 @@
 - 📱 Portal penghuni tanpa login (link pribadi via WA)
 - 📈 Laporan pemasukan, pengeluaran, dan tunggakan (ekspor Excel/PDF)
 
-## Dokumentasi
-| Dokumen | Isi |
-|---|---|
-| [01 — PRD](specs/01-PRD.md) | Latar belakang, tujuan, persona, ruang lingkup, prioritas fitur |
-| [02 — Requirements](specs/02-requirements.md) | Kebutuhan fungsional & non-fungsional + acceptance criteria |
-| [03 — Tech stack](specs/03-tech-stack.md) | Rekomendasi bahasa, framework, database, biaya |
-| [04 — Database](specs/04-database.md) | ERD, enum, definisi tabel, constraint, RLS |
-| [05 — Arsitektur](specs/05-architecture.md) | Komponen, job terjadwal, alur, integrasi WA & pembayaran, keamanan |
-| [06 — Desain UI/UX](specs/06-ui-design.md) | Prinsip, warna status, sitemap, wireframe |
-| [07 — Testing](specs/07-testing.md) | Strategi uji, kasus uji wajib, Definition of Done |
-| [08 — Roadmap](specs/08-roadmap.md) | Fase pengerjaan & pertanyaan terbuka |
+## Tech stack
 
-## Tech stack (rencana)
-TypeScript · Next.js 15 · PostgreSQL (Supabase) · Drizzle ORM · Tailwind + shadcn/ui · Fonnte (WhatsApp) · Vercel
+TypeScript · Next.js 16 (App Router) · PostgreSQL (Supabase) · Drizzle ORM · Supabase Auth · Tailwind CSS 4 · Vitest · Vercel
+
+---
+
+## Setup
+
+Butuh **Node.js ≥ 20.9** dan **pnpm** (`npm install -g pnpm`).
+
+```bash
+git clone https://github.com/latverian/kosku.git
+cd kosku
+pnpm install
+cp .env.example .env.local
+```
+
+### Opsi A — Pakai Supabase (disarankan)
+
+1. Buat project gratis di [supabase.com](https://supabase.com) (region: Singapore).
+2. **Project Settings → API**: salin _Project URL_ dan _anon/publishable key_ ke `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` di `.env.local`.
+3. **Project Settings → Database → Connection string → Transaction pooler**: salin ke `DATABASE_URL` (ganti `[YOUR-PASSWORD]`).
+4. **Authentication → URL Configuration**: isi _Site URL_ `http://localhost:3000` dan tambahkan `http://localhost:3000/auth/confirm` ke _Redirect URLs_.
+5. Jalankan migrasi database:
+   ```bash
+   pnpm db:migrate
+   ```
+6. Jalankan aplikasi, buka http://localhost:3000/daftar dan buat akun:
+   ```bash
+   pnpm dev
+   ```
+7. _(Opsional)_ Isi data contoh "Kos Melati" dengan akun kamu sebagai pemilik:
+   ```bash
+   SEED_OWNER_EMAIL=email-kamu@contoh.com pnpm db:seed
+   ```
+
+### Opsi B — PostgreSQL lokal tanpa Supabase (untuk mencoba cepat)
+
+Login belum bisa dipakai, tetapi dashboard bisa dibuka lewat **mode pratinjau development**.
+
+```bash
+# DATABASE_URL di .env.local → postgres://postgres:postgres@localhost:5432/kosku_dev
+pnpm db:reset-local                     # buat skema auth tiruan + migrasi (HANYA DB lokal)
+psql "$DATABASE_URL" -c "insert into auth.users (email) values ('saya@lokal.test') returning id"
+SEED_OWNER_EMAIL=saya@lokal.test pnpm db:seed
+```
+
+Lalu isi `KOSKU_DEV_PREVIEW_USER_ID=<id dari perintah di atas>` di `.env.local` dan jalankan `pnpm dev`. Mode ini **tidak pernah aktif di production**.
+
+## Perintah
+
+| Perintah                                       | Fungsi                                                       |
+| ---------------------------------------------- | ------------------------------------------------------------ |
+| `pnpm dev`                                     | Server development                                           |
+| `pnpm build` / `pnpm start`                    | Build & jalankan versi production                            |
+| `pnpm lint` / `pnpm typecheck` / `pnpm format` | Kualitas kode                                                |
+| `pnpm test`                                    | Tes unit (logika tagihan, denda, format, template WA)        |
+| `pnpm test:db`                                 | Tes integrasi database: trigger & RLS (butuh `DATABASE_URL`) |
+| `pnpm db:generate`                             | Buat file migrasi setelah mengubah `src/db/schema.ts`        |
+| `pnpm db:migrate`                              | Terapkan migrasi ke database                                 |
+| `pnpm db:seed`                                 | Isi data contoh                                              |
+| `pnpm db:studio`                               | Lihat isi database di browser                                |
+
+## Struktur
+
+```
+specs/              dokumen spesifikasi (PRD, requirements, desain, dll.)
+drizzle/            migrasi SQL (0000 = tabel, 0001 = trigger & RLS, ditulis tangan)
+scripts/db/         shim Supabase untuk PostgreSQL lokal/CI, reset DB lokal
+src/
+  app/(auth)/       login, daftar, server action auth
+  app/(dashboard)/  dashboard & halaman pemilik/pengelola
+  components/       komponen UI & layout (sidebar, navigasi bawah)
+  db/               skema Drizzle, koneksi, seed
+  lib/billing/      logika tagihan murni: jatuh tempo, prorata, denda, status
+  lib/messaging/    template pesan WhatsApp
+  server/           query & auth sisi server (Data Access Layer)
+tests/unit/         tes unit (Vitest)
+tests/db/           tes integrasi database
+```
+
+## Deploy ke Vercel
+
+1. Import repo ini di [vercel.com/new](https://vercel.com/new).
+2. Isi environment variables yang sama dengan `.env.local` (kecuali `KOSKU_DEV_PREVIEW_USER_ID`), dan ubah `APP_URL` ke domain Vercel.
+3. Di Supabase **Authentication → URL Configuration**, tambahkan `https://<domain>/auth/confirm`.
+
+## Stitch MCP (desain UI)
+
+`.mcp.json` mendaftarkan server MCP Stitch untuk Claude Code. API key **tidak** disimpan di repo: isi `STITCH_API_KEY` di environment kamu (lokal: `export STITCH_API_KEY=...`; Claude Code di cloud: pengaturan environment).
+
+## Dokumentasi
+
+| Dokumen                                       | Isi                                                                |
+| --------------------------------------------- | ------------------------------------------------------------------ |
+| [01 — PRD](specs/01-PRD.md)                   | Latar belakang, tujuan, persona, ruang lingkup, prioritas fitur    |
+| [02 — Requirements](specs/02-requirements.md) | Kebutuhan fungsional & non-fungsional + acceptance criteria        |
+| [03 — Tech stack](specs/03-tech-stack.md)     | Rekomendasi bahasa, framework, database, biaya                     |
+| [04 — Database](specs/04-database.md)         | ERD, enum, definisi tabel, constraint, RLS                         |
+| [05 — Arsitektur](specs/05-architecture.md)   | Komponen, job terjadwal, alur, integrasi WA & pembayaran, keamanan |
+| [06 — Desain UI/UX](specs/06-ui-design.md)    | Prinsip, warna status, sitemap, wireframe                          |
+| [07 — Testing](specs/07-testing.md)           | Strategi uji, kasus uji wajib, Definition of Done                  |
+| [08 — Roadmap](specs/08-roadmap.md)           | Fase pengerjaan & pertanyaan terbuka                               |
