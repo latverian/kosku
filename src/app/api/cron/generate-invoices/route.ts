@@ -10,6 +10,7 @@ async function handle(request: Request) {
   const auth = cronAuthorized(request);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
+  // Tetap ada untuk kompatibilitas; jadwal utama sekarang /api/cron/daily.
   const results = await runGenerateInvoices(adminDb());
   const failed = results.filter((r) => r.status === "failed");
   return NextResponse.json(

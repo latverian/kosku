@@ -17,6 +17,8 @@ import {
   verifyPayment,
   voidInvoice,
 } from "@/services/billing";
+import { dispatchSoon } from "@/server/dispatch";
+import { remindNow } from "@/services/messaging";
 
 const refresh = () => revalidatePath("/", "layout");
 
@@ -91,7 +93,7 @@ const paymentSchema = z.object({
 });
 
 export async function recordPaymentAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const { user, actor } = await requireContext();
+  const { user, property, actor } = await requireContext();
   const parsed = parseForm(paymentSchema, formData);
   if (!parsed.ok) return parsed.state;
   const { paidAt, ...rest } = parsed.data;
@@ -101,6 +103,7 @@ export async function recordPaymentAction(_prev: FormState, formData: FormData):
       await asUser(user.id, (tx) =>
         recordPayment(tx, actor, { ...rest, paidAt: new Date(`${paidAt}T05:00:00Z`) }),
       );
+      dispatchSoon(property.id);
       refresh();
       return { ok: true, message: "Pembayaran dicatat." };
     },
@@ -111,22 +114,41 @@ export async function recordPaymentAction(_prev: FormState, formData: FormData):
 }
 
 export async function verifyPaymentAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const { user, actor } = await requireContext();
+  const { user, property, actor } = await requireContext();
   const paymentId = String(formData.get("paymentId"));
   return attempt(async () => {
     await asUser(user.id, (tx) => verifyPayment(tx, actor, paymentId));
+    dispatchSoon(property.id);
     refresh();
     return { ok: true, message: "Pembayaran diverifikasi." };
   });
 }
 
 export async function rejectPaymentAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const { user, actor } = await requireContext();
+  const { user, property, actor } = await requireContext();
   const paymentId = String(formData.get("paymentId"));
   const reason = String(formData.get("reason") ?? "");
   return attempt(async () => {
     await asUser(user.id, (tx) => rejectPayment(tx, actor, paymentId, reason));
+    dispatchSoon(property.id);
     refresh();
     return { ok: true, message: "Pembayaran ditolak." };
+  });
+}
+
+export async function remindNowAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const { user, property, actor } = await requireContext();
+  const invoiceId = String(formData.get("invoiceId"));
+  return attempt(async () => {
+    const msg = await asUser(user.id, (tx) => remindNow(tx, actor, invoiceId));
+    dispatchSoon(property.id);
+    revalidatePath(`/tagihan/${invoiceId}`);
+    const later = msg && msg.scheduledAt.getTime() > Date.now() + 60_000;
+    return {
+      ok: true,
+      message: later
+        ? `Pengingat dijadwalkan ${msg!.scheduledAt.toLocaleTimeString("id-ID", { timeZone: property.timezone, hour: "2-digit", minute: "2-digit" })} (sekarang jam tenang).`
+        : "Pengingat WA dikirim.",
+    };
   });
 }

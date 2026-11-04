@@ -44,3 +44,6 @@ next-env.d.ts
 # hasil tes & alat
 /test-results/
 /playwright-report/
+
+# file unggahan lokal (development)
+/.data/

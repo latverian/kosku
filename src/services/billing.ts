@@ -17,8 +17,10 @@ import {
   tenants,
 } from "@/db/schema";
 import { addDays, invoiceNumber, planInvoices, todayIn, type InvoicePlan, type IsoDate } from "@/lib/billing";
-import { formatDate, formatPeriod } from "@/lib/format";
+import { lateFee, type LateFeeRule } from "@/lib/billing/late-fee";
+import { formatDate, formatPeriod, formatRupiah } from "@/lib/format";
 import { audit, must, ServiceError, type Actor } from "./core";
+import { notifyPayment } from "./messaging";
 
 type InvoiceItemType = (typeof invoiceItems.$inferInsert)["type"];
 type PaymentMethod = (typeof payments.$inferInsert)["method"];
@@ -139,6 +141,88 @@ export async function generateInvoicesForProperty(tx: Tx, actor: Actor, property
 }
 
 // ---------------------------------------------------------------------------
+// Denda keterlambatan otomatis (FR-3.7)
+// ---------------------------------------------------------------------------
+
+/**
+ * Perbarui item denda otomatis (meta.auto = true) pada tagihan terlambat.
+ * Idempoten: nominal dihitung ulang dari aturan, bukan ditambah terus.
+ * Tagihan yang sudah lunas tidak disentuh, jadi denda berhenti bertambah.
+ */
+export async function applyLateFees(tx: Tx, actor: Actor, propertyId: string, today: IsoDate) {
+  const [settings] = await tx
+    .select()
+    .from(propertySettings)
+    .where(eq(propertySettings.propertyId, propertyId));
+  if (!settings || settings.lateFeeType === "none") return 0;
+  const rule: LateFeeRule =
+    settings.lateFeeType === "fixed"
+      ? { type: "fixed", amount: settings.lateFeeAmount, graceDays: settings.lateFeeGraceDays }
+      : {
+          type: "daily",
+          amount: settings.lateFeeAmount,
+          graceDays: settings.lateFeeGraceDays,
+          max: settings.lateFeeMax,
+        };
+
+  const overdue = await tx
+    .select({ id: invoices.id, dueDate: invoices.dueDate, number: invoices.number })
+    .from(invoices)
+    .where(
+      and(
+        eq(invoices.propertyId, propertyId),
+        inArray(invoices.status, ["issued", "partial"]),
+        lt(invoices.dueDate, today),
+      ),
+    );
+
+  let changed = 0;
+  for (const inv of overdue) {
+    const fee = lateFee(rule, inv.dueDate, today);
+    const [auto] = await tx
+      .select()
+      .from(invoiceItems)
+      .where(
+        and(
+          eq(invoiceItems.invoiceId, inv.id),
+          eq(invoiceItems.type, "late_fee"),
+          sql`${invoiceItems.meta}->>'auto' = 'true'`,
+        ),
+      );
+    const description =
+      rule.type === "daily"
+        ? `Denda keterlambatan (${formatRupiah(rule.amount)}/hari)`
+        : "Denda keterlambatan";
+    if (fee <= 0 || auto?.amount === fee) continue;
+    if (auto) {
+      await tx
+        .update(invoiceItems)
+        .set({ amount: fee, description, meta: { auto: true, asOf: today } })
+        .where(eq(invoiceItems.id, auto.id));
+    } else {
+      await tx.insert(invoiceItems).values({
+        invoiceId: inv.id,
+        type: "late_fee",
+        description,
+        amount: fee,
+        meta: { auto: true, asOf: today },
+      });
+    }
+    await syncInvoiceCredit(tx, inv.id);
+    await audit(tx, actor, {
+      propertyId,
+      action: "invoice.late_fee",
+      entityType: "invoice",
+      entityId: inv.id,
+      before: auto?.amount ?? 0,
+      after: fee,
+    });
+    changed++;
+  }
+  return changed;
+}
+
+// ---------------------------------------------------------------------------
 // Item & pembatalan tagihan
 // ---------------------------------------------------------------------------
 
@@ -254,6 +338,8 @@ export async function recordPayment(
     method: Exclude<PaymentMethod, "credit">;
     paidAt: Date;
     notes?: string | null;
+    /** kirim WA konfirmasi ke penghuni (default ya) */
+    notify?: boolean;
   },
 ) {
   if (actor.type !== "user") throw new ServiceError("Pembayaran manual harus dicatat oleh pengguna.");
@@ -280,6 +366,7 @@ export async function recordPayment(
     })
     .returning();
   await syncInvoiceCredit(tx, invoice.id);
+  if (input.notify !== false) await notifyPayment(tx, payment.id, "confirmed");
   await audit(tx, actor, {
     propertyId: invoice.propertyId,
     action: "payment.record",
@@ -305,6 +392,7 @@ export async function verifyPayment(tx: Tx, actor: Actor, paymentId: string) {
     .where(eq(payments.id, paymentId))
     .returning();
   await syncInvoiceCredit(tx, payment.invoiceId);
+  await notifyPayment(tx, paymentId, "confirmed");
   await audit(tx, actor, {
     propertyId: payment.propertyId,
     action: "payment.verify",
@@ -326,6 +414,7 @@ export async function rejectPayment(tx: Tx, actor: Actor, paymentId: string, rea
     .where(eq(payments.id, paymentId))
     .returning();
   await syncInvoiceCredit(tx, payment.invoiceId);
+  await notifyPayment(tx, paymentId, "rejected");
   await audit(tx, actor, {
     propertyId: payment.propertyId,
     action: "payment.reject",

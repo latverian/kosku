@@ -12,7 +12,8 @@ import { formatDate, formatPeriod, formatRupiah } from "@/lib/format";
 import { DEPOSIT_STATUS_LABEL } from "@/lib/labels";
 import { requireContext } from "@/server/actions";
 import { getTenantDetail, listAvailableRooms } from "@/services/tenants";
-import { CheckOutForm, EditTenantForm, MoveRoomForm } from "./forms";
+import { configFromEnv, ensurePortalLink } from "@/services/messaging";
+import { CheckOutForm, EditTenantForm, MoveRoomForm, MuteToggle, PortalLinkCard } from "./forms";
 
 export const metadata: Metadata = { title: "Penghuni" };
 
@@ -24,11 +25,15 @@ export default async function TenantDetailPage({ params, searchParams }: PagePro
   const data = await asUser(user.id, async (tx) => {
     const detail = await getTenantDetail(tx, id);
     return detail
-      ? { ...detail, rooms: detail.activeLease ? await listAvailableRooms(tx, property.id) : [] }
+      ? {
+          ...detail,
+          rooms: detail.activeLease ? await listAvailableRooms(tx, property.id) : [],
+          portalUrl: await ensurePortalLink(tx, id, configFromEnv()),
+        }
       : null;
   });
   if (!data) notFound();
-  const { tenant, activeLease, leases, invoices, credit, rooms } = data;
+  const { tenant, activeLease, leases, invoices, credit, rooms, portalUrl } = data;
   const today = todayIn(property.timezone);
   const outstanding = invoices
     .filter((i) => i.status === "issued" || i.status === "partial")
@@ -138,6 +143,20 @@ export default async function TenantDetailPage({ params, searchParams }: PagePro
         </div>
 
         <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Portal penghuni</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <PortalLinkCard
+                tenantId={tenant.id}
+                url={portalUrl}
+                phone={tenant.phone}
+                name={tenant.fullName.split(" ")[0]}
+              />
+              <MuteToggle tenantId={tenant.id} muted={tenant.remindersMuted} />
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle>Tagihan</CardTitle>

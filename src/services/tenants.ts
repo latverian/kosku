@@ -8,6 +8,7 @@ import { addMonths, assertBillingDay, type IsoDate } from "@/lib/billing";
 import { encryptText } from "@/lib/crypto";
 import { creditBalance, generateInvoicesForLease, releaseCreditPayments } from "./billing";
 import { audit, must, ServiceError, type Actor } from "./core";
+import { notifyWelcome } from "./messaging";
 
 export type TenantInput = {
   fullName: string;
@@ -74,7 +75,15 @@ async function roomForCheckIn(tx: Tx, roomId: string) {
 export async function checkIn(
   tx: Tx,
   actor: Actor,
-  input: { roomId: string; tenant: TenantInput; lease: LeaseInput; nikKey?: string | null; today?: IsoDate },
+  input: {
+    roomId: string;
+    tenant: TenantInput;
+    lease: LeaseInput;
+    nikKey?: string | null;
+    today?: IsoDate;
+    /** kirim WA sambutan + link portal (default ya) */
+    sendWelcome?: boolean;
+  },
 ) {
   validateLease(input.lease);
   const room = await roomForCheckIn(tx, input.roomId);
@@ -90,6 +99,7 @@ export async function checkIn(
     .returning();
 
   const created = await generateInvoicesForLease(tx, actor, lease.id, input.today);
+  if (input.sendWelcome !== false) await notifyWelcome(tx, lease.id);
   await audit(tx, actor, {
     propertyId: room.propertyId,
     action: "lease.check_in",
@@ -370,4 +380,19 @@ export async function listAvailableRooms(tx: Tx, propertyId: string) {
     )
     .orderBy(asc(rooms.floor), asc(rooms.code));
   return rows.filter((r) => r.active < r.capacity);
+}
+
+export async function setRemindersMuted(tx: Tx, actor: Actor, tenantId: string, muted: boolean) {
+  const [row] = await tx
+    .update(tenants)
+    .set({ remindersMuted: muted })
+    .where(eq(tenants.id, tenantId))
+    .returning();
+  must(row, "Penghuni");
+  await audit(tx, actor, {
+    propertyId: row.propertyId,
+    action: muted ? "tenant.mute" : "tenant.unmute",
+    entityType: "tenant",
+    entityId: tenantId,
+  });
 }

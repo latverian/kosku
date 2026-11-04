@@ -29,16 +29,19 @@ Estimasi untuk 1 developer paruh waktu (±15–20 jam/minggu). Setiap fase berak
 
 ✅ **Rilis v0.1**: pemilik bisa memakai Kosku menggantikan buku/Excel. Pengingat masih manual (tombol "Kirim WA" membuka `wa.me` dengan pesan terisi).
 
-## Fase 2 — WhatsApp, portal & komplain (minggu 5–7)
-- [ ] Interface `WhatsAppProvider` + Fonnte + ConsoleProvider
-- [ ] Template pesan + editor + pratinjau
-- [ ] Jobs `schedule_reminders`, `send_messages`, jam tenang, retry
-- [ ] Log pesan, kirim ulang, mute per penghuni
-- [ ] Portal penghuni (token, tagihan, upload bukti, riwayat)
-- [ ] Notifikasi WA: bukti baru (ke pemilik), lunas, ditolak, sambutan
-- [ ] Komplain: buat (portal & staf), foto, status, komentar, penugasan, rating
-- [ ] Broadcast pengumuman
-- [ ] Denda keterlambatan (`apply_late_fees`)
+## Fase 2 — WhatsApp, portal & komplain (minggu 5–7) ✅ selesai
+- [x] Interface `WhatsAppProvider` + Fonnte + ConsoleProvider
+- [x] Template pesan + editor + pratinjau langsung (peringatan variabel tidak dikenal)
+- [x] Jobs `schedule_reminders`, `send_messages`, jam tenang, retry (1/5/15 menit), toleransi 1 hari bila job terlewat
+- [x] Log pesan, kirim ulang, mute per penghuni, pesan uji, "Kirim antrian sekarang"
+- [x] Portal penghuni (token HMAC + versi untuk dicabut, tagihan, rekening + salin, upload bukti, riwayat, berlaku 30 hari setelah check-out)
+- [x] Notifikasi WA: bukti baru (ke pengelola), konfirmasi bayar (termasuk cicilan), ditolak, sambutan, komplain baru/update
+- [x] Komplain: buat (portal & staf), foto (dikompres di browser), status, komentar dua arah, penugasan, biaya → pengeluaran, rating
+- [x] Broadcast pengumuman (semua / per lantai)
+- [x] Denda keterlambatan otomatis (`apply_late_fees`, idempoten)
+- [x] Penyimpanan file privat (Supabase Storage + signed URL 10 menit; disk lokal + URL HMAC untuk development)
+- [ ] Upload foto KTP → Fase 3 (bersama pengelolaan dokumen penghuni)
+- [ ] Webhook status pesan Fonnte (terkirim → dibaca) → Fase 3
 
 ✅ **Rilis v0.2**: penagihan berjalan otomatis, penghuni punya portal.
 

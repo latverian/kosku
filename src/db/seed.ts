@@ -160,6 +160,7 @@ async function main() {
             billingStartPeriod: room.code === "11" ? null : billingStart,
           },
           today,
+          sendWelcome: false,
         });
         invoiceCount += invoices.length;
 
@@ -184,7 +185,7 @@ async function main() {
               recordedBy: by === "staff" ? ownerId : null,
               verifiedBy: status === "verified" ? ownerId : null,
               verifiedAt: status === "verified" ? new Date() : null,
-              proofPath: by === "tenant" ? `seed/${invoice.number}.jpg` : null,
+              proofPath: null,
             });
           if (effective === "paid") await pay(invoice.total, "verified", "staff");
           if (effective === "partial")

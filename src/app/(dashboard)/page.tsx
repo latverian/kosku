@@ -274,7 +274,7 @@ function ActionList({ data }: { data: DashboardData }) {
                 icon={<MessageCircleWarning className="text-status-overdue" aria-hidden />}
                 title={`${data.failedMessages} pesan WA gagal terkirim`}
                 subtitle="Kirim ulang dari halaman Pesan WA"
-                href="/pesan"
+                href="/pesan?status=failed"
               />
             )}
           </ul>

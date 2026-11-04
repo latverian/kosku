@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import {
   AddItemForm,
   RecordPaymentForm,
+  RemindNowButton,
   RemoveItemButton,
   VerifyRejectButtons,
   VoidInvoiceForm,
@@ -20,6 +21,7 @@ import { ITEM_TYPE_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL } from "@/l
 import { cn } from "@/lib/utils";
 import { requireContext } from "@/server/actions";
 import { getInvoiceDetail } from "@/services/billing";
+import { signedUrl } from "@/server/uploads";
 import { getSettings } from "@/services/properties";
 
 export const metadata: Metadata = { title: "Detail tagihan" };
@@ -35,6 +37,13 @@ export default async function InvoiceDetailPage({ params, searchParams }: PagePr
   });
   if (!data) notFound();
   const { invoice, items, payments, tenantName, phone, roomCode } = data.detail;
+  const proofUrls = new Map(
+    await Promise.all(
+      payments
+        .filter((p) => p.proofPath)
+        .map(async (p) => [p.id, await signedUrl("payment-proofs", p.proofPath)] as const),
+    ),
+  );
   const today = todayIn(property.timezone);
   const hasPending = payments.some((p) => p.status === "pending");
   const status = displayStatus({ ...invoice, hasPendingPayment: hasPending }, today);
@@ -163,6 +172,16 @@ export default async function InvoiceDetailPage({ params, searchParams }: PagePr
                           {p.submittedBy === "tenant" ? " · dikirim penghuni" : ""}
                         </span>
                         {p.notes && <span className="block text-xs text-muted-foreground">{p.notes}</span>}
+                        {proofUrls.get(p.id) && (
+                          <a
+                            href={proofUrls.get(p.id)!}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-medium text-primary hover:underline"
+                          >
+                            Lihat bukti transfer
+                          </a>
+                        )}
                       </span>
                       {p.status === "pending" && <VerifyRejectButtons paymentId={p.id} />}
                     </li>
@@ -188,6 +207,7 @@ export default async function InvoiceDetailPage({ params, searchParams }: PagePr
               </CardContent>
             </Card>
           )}
+          {remaining > 0 && invoice.status !== "void" && <RemindNowButton invoiceId={invoice.id} />}
           {remaining > 0 && invoice.status !== "void" && (
             <a
               href={`https://wa.me/${phone}?text=${encodeURIComponent(waText)}`}
@@ -195,7 +215,7 @@ export default async function InvoiceDetailPage({ params, searchParams }: PagePr
               rel="noopener noreferrer"
               className={cn(buttonVariants({ variant: "outline" }), "w-full")}
             >
-              <MessageCircle aria-hidden /> Kirim tagihan via WhatsApp
+              <MessageCircle aria-hidden /> Tulis sendiri di WhatsApp
             </a>
           )}
           {editable && (

@@ -96,17 +96,50 @@ tests/unit/         tes unit (Vitest)
 tests/db/           tes integrasi database
 ```
 
-## Tagihan otomatis (cron)
+## Job otomatis (cron)
 
-Setiap hari pukul 07.00 WIB, Vercel Cron memanggil `/api/cron/generate-invoices` (lihat `vercel.json`) untuk membuat tagihan yang jatuh tempo ≤ N hari lagi (atur di **Pengaturan**). Isi `CRON_SECRET` di environment Vercel; Vercel mengirimnya otomatis sebagai header.
+| Endpoint                  | Jadwal Vercel (`vercel.json`) | Tugas                                                       |
+| ------------------------- | ----------------------------- | ----------------------------------------------------------- |
+| `/api/cron/daily`         | 07.00 WIB                     | Buat tagihan → denda keterlambatan → jadwalkan pengingat WA |
+| `/api/cron/send-messages` | 08.05 WIB                     | Kirim antrian WhatsApp (maks. 20 pesan/panggilan)           |
+
+Isi `CRON_SECRET` di environment Vercel; Vercel mengirimnya otomatis sebagai header `Authorization: Bearer …`. Notifikasi kejadian (konfirmasi bayar, komplain baru, dll.) juga langsung dikirim setelah aksi, kecuali di jam tenang.
+
+Paket Vercel Hobby hanya menjalankan cron **sekali sehari**. Supaya antrian WA terkirim tiap 5 menit, jadwalkan endpoint pengirim dari Supabase (**SQL Editor**, aktifkan ekstensi `pg_cron` dan `pg_net` dulu di **Database → Extensions**):
+
+```sql
+select cron.schedule(
+  'kosku-send-messages',
+  '*/5 * * * *',
+  $$ select net.http_post(
+       url := 'https://DOMAIN-KAMU.vercel.app/api/cron/send-messages',
+       headers := jsonb_build_object('Authorization', 'Bearer ISI_CRON_SECRET')
+     ) $$
+);
+```
 
 Uji manual di lokal:
 
 ```bash
-curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/generate-invoices
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/daily
 ```
 
-Tagihan juga bisa dibuat kapan saja lewat tombol **Buat tagihan sekarang** di halaman Tagihan.
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/send-messages
+```
+
+## WhatsApp (Fonnte)
+
+1. Daftar di [fonnte.com](https://fonnte.com), tambahkan **device** dengan nomor WA khusus kos, lalu scan QR.
+2. Salin **token** device ke `FONNTE_TOKEN`.
+3. Buka **Pesan WA → Pengaturan → Kirim uji**.
+
+Tanpa `FONNTE_TOKEN`, di development pesan hanya dicetak di log server; di production pesan ditandai gagal dengan alasan yang jelas.
+
+## Portal penghuni & file
+
+- Isi `PORTAL_SECRET` (min. 16 karakter). Link portal tiap penghuni ada di halaman detail penghuni dan otomatis masuk ke pesan WA. **Buat link baru** mencabut link lama.
+- Foto bukti bayar & komplain disimpan di Supabase Storage (bucket privat, dibuat oleh migrasi). Isi `SUPABASE_SERVICE_ROLE_KEY`. Tanpa itu, di development file disimpan di `.data/uploads`.
 
 ## Deploy ke Vercel
 

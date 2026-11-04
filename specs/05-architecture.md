@@ -54,7 +54,7 @@ flowchart LR
 
 **Vercel Cron** (`vercel.json`) memanggil endpoint Next.js dengan header `Authorization: Bearer <CRON_SECRET>` (dikirim otomatis oleh Vercel bila env `CRON_SECRET` diisi). Vercel Hobby hanya mengizinkan cron harian; untuk job yang lebih sering (`send_messages` tiap 5 menit di Fase 2) pakai `pg_cron` Supabase atau Vercel Pro.
 
-> **Status Fase 1:** baru `generate_invoices` (`/api/cron/generate-invoices`, `0 0 * * *` UTC = 07.00 WIB). Logika ada di `src/services/jobs.ts` dan `src/services/billing.ts`.
+> **Status Fase 2:** `generate_invoices`, `apply_late_fees`, dan `schedule_reminders` dijalankan berurutan oleh `/api/cron/daily` (07.00 WIB). `send_messages` = `/api/cron/send-messages` (Vercel harian 08.05 WIB + disarankan pg_cron tiap 5 menit, lihat README). Jeda antar pesan 2–4 detik (bukan 5–15) agar muat di batas 60 detik fungsi serverless; Fonnte mengantrikan pengiriman di sisi mereka. Logika: `src/services/jobs.ts`, `messaging.ts`, `billing.ts`.
 
 | Job | Jadwal (WIB) | Endpoint | Tugas |
 |---|---|---|---|

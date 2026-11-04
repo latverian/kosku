@@ -5,7 +5,13 @@ import { Field, FormAlert, MoneyField, SubmitButton, TextField } from "@/compone
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { formatRupiah } from "@/lib/format";
-import { checkOutAction, moveRoomAction, updateTenantAction } from "../actions";
+import {
+  checkOutAction,
+  moveRoomAction,
+  muteAction,
+  rotatePortalAction,
+  updateTenantAction,
+} from "../actions";
 
 type Tenant = {
   id: string;
@@ -240,6 +246,90 @@ export function MoveRoomForm({
       </p>
       <FormAlert state={state} />
       <SubmitButton pendingText="Memproses…">Pindahkan</SubmitButton>
+    </form>
+  );
+}
+
+export function PortalLinkCard({
+  tenantId,
+  url,
+  phone,
+  name,
+}: {
+  tenantId: string;
+  url: string | null;
+  phone: string;
+  name: string;
+}) {
+  const [state, action] = useActionState(rotatePortalAction, undefined);
+  const [copied, setCopied] = useState(false);
+  if (!url) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Link portal belum aktif: isi PORTAL_SECRET di environment server.
+      </p>
+    );
+  }
+  const waText = `Halo ${name}, ini link portal penghuni kamu untuk melihat tagihan, kirim bukti bayar, dan lapor kerusakan:\n${url}\n\nLink ini khusus untuk kamu, jangan dibagikan ya 🙏`;
+  return (
+    <div className="space-y-3 text-sm">
+      <p className="rounded-lg bg-muted p-2.5 font-mono text-xs break-all">{url}</p>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="h-9 rounded-lg border bg-card px-3 text-sm font-medium hover:bg-muted"
+          onClick={async () => {
+            await navigator.clipboard.writeText(url);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          }}
+        >
+          {copied ? "Tersalin ✓" : "Salin link"}
+        </button>
+        <a
+          href={`https://wa.me/${phone}?text=${encodeURIComponent(waText)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex h-9 items-center rounded-lg border bg-card px-3 text-sm font-medium hover:bg-muted"
+        >
+          Kirim via WA
+        </a>
+        <form
+          action={action}
+          onSubmit={(e) => {
+            if (
+              !confirm("Buat link baru? Link lama langsung tidak berlaku (misalnya bila HP penghuni hilang).")
+            )
+              e.preventDefault();
+          }}
+        >
+          <input type="hidden" name="tenantId" value={tenantId} />
+          <SubmitButton size="sm" variant="ghost" className="text-status-overdue">
+            Buat link baru
+          </SubmitButton>
+        </form>
+      </div>
+      <FormAlert state={state} />
+    </div>
+  );
+}
+
+export function MuteToggle({ tenantId, muted }: { tenantId: string; muted: boolean }) {
+  const [state, action] = useActionState(muteAction, undefined);
+  return (
+    <form action={action} className="space-y-2">
+      <input type="hidden" name="tenantId" value={tenantId} />
+      <input type="hidden" name="muted" value={String(!muted)} />
+      <p className="text-sm">
+        Pengingat tagihan otomatis: <strong>{muted ? "dimatikan" : "aktif"}</strong>
+      </p>
+      <SubmitButton size="sm" variant="outline">
+        {muted ? "Aktifkan lagi" : "Matikan pengingat"}
+      </SubmitButton>
+      <p className="text-xs text-muted-foreground">
+        Misalnya bila penghuni sudah izin bayar telat. Konfirmasi pembayaran tetap dikirim.
+      </p>
+      <FormAlert state={state} />
     </form>
   );
 }

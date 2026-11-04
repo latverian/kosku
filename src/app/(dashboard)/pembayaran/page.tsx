@@ -11,6 +11,7 @@ import { PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { requireContext } from "@/server/actions";
 import { listPayments } from "@/services/billing";
+import { signedUrl } from "@/server/uploads";
 
 export const metadata: Metadata = { title: "Pembayaran" };
 
@@ -22,6 +23,13 @@ export default async function PaymentsPage({ searchParams }: PageProps<"/pembaya
     const p = await listPayments(tx, property.id, "pending");
     return [p, showAll ? await listPayments(tx, property.id) : p] as const;
   });
+  const proofUrls = new Map(
+    await Promise.all(
+      rows
+        .filter((r) => r.proofPath)
+        .map(async (r) => [r.id, await signedUrl("payment-proofs", r.proofPath)] as const),
+    ),
+  );
 
   return (
     <div className="space-y-4">
@@ -77,6 +85,16 @@ export default async function PaymentsPage({ searchParams }: PageProps<"/pembaya
                   {showAll ? ` · ${PAYMENT_STATUS_LABEL[p.status]}` : ""}
                 </span>
               </Link>
+              {proofUrls.get(p.id) && (
+                <a
+                  href={proofUrls.get(p.id)!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  Lihat bukti
+                </a>
+              )}
               {p.status === "pending" && (
                 <div className="basis-full pl-14 sm:basis-auto sm:pl-0">
                   <VerifyRejectButtons paymentId={p.id} />
@@ -85,11 +103,6 @@ export default async function PaymentsPage({ searchParams }: PageProps<"/pembaya
             </div>
           ))}
         </Card>
-      )}
-      {!showAll && pending.length > 0 && (
-        <p className="text-xs text-muted-foreground">
-          Foto bukti transfer dari penghuni tampil di sini mulai Fase 2 (portal penghuni).
-        </p>
       )}
     </div>
   );

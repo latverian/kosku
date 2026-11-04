@@ -20,7 +20,9 @@ import {
 } from "@/lib/validation";
 import { attempt, formValues, parseForm, requireContext } from "@/server/actions";
 import type { FormState } from "@/server/form-state";
-import { checkIn, checkOut, moveRoom, updateTenant } from "@/services/tenants";
+import { dispatchSoon } from "@/server/dispatch";
+import { configFromEnv, rotatePortalLink } from "@/services/messaging";
+import { checkIn, checkOut, moveRoom, setRemindersMuted, updateTenant } from "@/services/tenants";
 
 const nik = z
   .preprocess((v) => (typeof v === "string" ? v.replace(/\D/g, "") : v), z.string())
@@ -106,6 +108,7 @@ export async function checkInAction(_prev: FormState, formData: FormData): Promi
         }),
       );
       tenantId = r.tenant.id;
+      dispatchSoon(property.id);
     },
     { values: formValues(formData) },
   );
@@ -179,4 +182,31 @@ export async function moveRoomAction(_prev: FormState, formData: FormData): Prom
   if (result?.error) return result;
   revalidatePath("/", "layout");
   redirect(`/penghuni/${tenantId}?pindah=1`);
+}
+
+export async function rotatePortalAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const { user, actor } = await requireContext();
+  const tenantId = String(formData.get("tenantId"));
+  return attempt(async () => {
+    await asUser(user.id, (tx) => rotatePortalLink(tx, actor, tenantId, configFromEnv()));
+    revalidatePath(`/penghuni/${tenantId}`);
+    return {
+      ok: true,
+      message: "Link baru dibuat. Link lama tidak berlaku lagi — kirim link baru ke penghuni.",
+    };
+  });
+}
+
+export async function muteAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const { user, actor } = await requireContext();
+  const tenantId = String(formData.get("tenantId"));
+  const muted = formData.get("muted") === "true";
+  return attempt(async () => {
+    await asUser(user.id, (tx) => setRemindersMuted(tx, actor, tenantId, muted));
+    revalidatePath(`/penghuni/${tenantId}`);
+    return {
+      ok: true,
+      message: muted ? "Pengingat otomatis dimatikan untuk penghuni ini." : "Pengingat otomatis aktif lagi.",
+    };
+  });
 }

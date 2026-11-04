@@ -1,0 +1,2 @@
+DROP INDEX "messages_one_reminder_per_type_uq";--> statement-breakpoint
+CREATE UNIQUE INDEX "messages_one_reminder_per_type_uq" ON "messages" USING btree ("invoice_id","type") WHERE "messages"."invoice_id" is not null and "messages"."type" in ('reminder_before', 'reminder_due', 'reminder_overdue_1', 'reminder_overdue_3', 'reminder_overdue_7');

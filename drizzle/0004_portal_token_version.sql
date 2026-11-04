@@ -1,0 +1,1 @@
+ALTER TABLE "tenants" ADD COLUMN "portal_token_version" smallint DEFAULT 1 NOT NULL;

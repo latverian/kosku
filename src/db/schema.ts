@@ -244,6 +244,8 @@ export const tenants = pgTable(
     emergencyPhone: text("emergency_phone"),
     remindersMuted: boolean("reminders_muted").notNull().default(false),
     portalTokenHash: text("portal_token_hash").unique(),
+    /** Dinaikkan untuk mencabut link portal lama (lihat src/lib/portal-token.ts). */
+    portalTokenVersion: smallint("portal_token_version").notNull().default(1),
     portalTokenCreatedAt: tstz("portal_token_created_at"),
     notes: text("notes"),
     archivedAt: tstz("archived_at"),
@@ -532,9 +534,13 @@ export const messages = pgTable(
   },
   (t) => [
     // satu jenis pengingat hanya sekali per tagihan (FR-5.3)
+    // Satu jenis PENGINGAT hanya sekali per tagihan (FR-5.3). Konfirmasi
+    // pembayaran boleh berkali-kali (cicilan).
     uniqueIndex("messages_one_reminder_per_type_uq")
       .on(t.invoiceId, t.type)
-      .where(sql`${t.invoiceId} is not null`),
+      .where(
+        sql`${t.invoiceId} is not null and ${t.type} in ('reminder_before', 'reminder_due', 'reminder_overdue_1', 'reminder_overdue_3', 'reminder_overdue_7')`,
+      ),
     index("messages_queue_idx").on(t.status, t.scheduledAt),
     index("messages_property_created_idx").on(t.propertyId, t.createdAt),
   ],

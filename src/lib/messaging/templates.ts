@@ -11,7 +11,10 @@ export type TemplateType =
   | "reminder_overdue_7"
   | "payment_confirmed"
   | "payment_rejected"
-  | "welcome";
+  | "welcome"
+  | "complaint_update"
+  | "complaint_new_owner"
+  | "proof_uploaded_owner";
 
 const overdue = `Halo {nama}, sewa kamar {kamar} periode {periode} sudah lewat jatuh tempo {hari_telat} hari.
 Sisa tagihan: *{sisa}*{denda_info}
@@ -46,6 +49,30 @@ Kamar: {kamar} | Sewa: {nominal}/bulan | Tagih setiap tgl {tgl_tagih}
 
 Simpan nomor ini ya, semua info tagihan & pengumuman akan dikirim dari sini.
 Portal penghuni (tagihan, bayar, lapor kerusakan): {link_portal}`,
+  complaint_update: `Halo {nama}, komplain #{nomor} "{judul}" sekarang: *{status}*.{catatan_info}
+Detail: {link_portal}`,
+  complaint_new_owner: `🛠 Komplain baru #{nomor} [{prioritas}]
+{judul}
+{lokasi} · {nama}
+Lihat: {link_admin}`,
+  proof_uploaded_owner: `💳 Bukti bayar baru: Kamar {kamar} – {nama}
+{nominal} untuk {periode}
+Verifikasi: {link_admin}`,
+};
+
+/** Label UI per jenis template. */
+export const TEMPLATE_LABEL: Record<TemplateType, string> = {
+  reminder_before: "Pengingat sebelum jatuh tempo (H-3)",
+  reminder_due: "Pengingat hari jatuh tempo",
+  reminder_overdue_1: "Pengingat telat H+1",
+  reminder_overdue_3: "Pengingat telat H+3",
+  reminder_overdue_7: "Pengingat telat H+7",
+  payment_confirmed: "Konfirmasi pembayaran diterima",
+  payment_rejected: "Bukti pembayaran ditolak",
+  welcome: "Sambutan check-in",
+  complaint_update: "Update status komplain (ke penghuni)",
+  complaint_new_owner: "Komplain baru (ke pengelola)",
+  proof_uploaded_owner: "Bukti bayar baru (ke pengelola)",
 };
 
 export type TemplateVars = Record<string, string | number>;

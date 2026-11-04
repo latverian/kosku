@@ -126,3 +126,38 @@ export async function getProperty(tx: Tx, propertyId: string) {
 export async function listProperties(tx: Tx) {
   return tx.select().from(properties).where(isNull(properties.archivedAt)).orderBy(asc(properties.createdAt));
 }
+
+export type ReminderSettingsInput = {
+  remindersEnabled: boolean;
+  reminderOffsets: number[];
+  quietStart: string;
+  quietEnd: string;
+};
+
+export async function updateReminderSettings(
+  tx: Tx,
+  actor: Actor,
+  propertyId: string,
+  input: ReminderSettingsInput,
+) {
+  const offsets = [...new Set(input.reminderOffsets)].sort((a, b) => a - b);
+  if (offsets.some((o) => !Number.isInteger(o) || o < -7 || o > 30))
+    throw new ServiceError("Jadwal pengingat tidak valid.");
+  if (!/^\d{2}:\d{2}$/.test(input.quietStart) || !/^\d{2}:\d{2}$/.test(input.quietEnd)) {
+    throw new ServiceError("Format jam harus HH:MM.", "quietStart");
+  }
+  const [after] = await tx
+    .update(propertySettings)
+    .set({ ...input, reminderOffsets: offsets })
+    .where(eq(propertySettings.propertyId, propertyId))
+    .returning();
+  if (!after) throw new ServiceError("Hanya pemilik yang bisa mengubah pengaturan.");
+  await audit(tx, actor, {
+    propertyId,
+    action: "settings.reminders",
+    entityType: "property_settings",
+    entityId: propertyId,
+    after: input,
+  });
+  return after;
+}

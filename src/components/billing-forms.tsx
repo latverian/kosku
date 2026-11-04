@@ -1,12 +1,13 @@
 "use client";
 
-import { Check, Trash2, X } from "lucide-react";
+import { Check, MessageCircle, Trash2, X } from "lucide-react";
 import { useActionState, useState } from "react";
 import {
   addItemAction,
   generateNowAction,
   recordPaymentAction,
   rejectPaymentAction,
+  remindNowAction,
   removeItemAction,
   verifyPaymentAction,
   voidInvoiceAction,
@@ -269,5 +270,18 @@ export function VerifyRejectButtons({ paymentId }: { paymentId: string }) {
       )}
       {error && <p className="text-xs text-status-overdue">{error}</p>}
     </div>
+  );
+}
+
+export function RemindNowButton({ invoiceId }: { invoiceId: string }) {
+  const [state, action] = useActionState(remindNowAction, undefined);
+  return (
+    <form action={action} className="space-y-2">
+      <input type="hidden" name="invoiceId" value={invoiceId} />
+      <SubmitButton variant="outline" className="w-full" pendingText="Mengirim…">
+        <MessageCircle aria-hidden /> Kirim pengingat WA otomatis
+      </SubmitButton>
+      <FormAlert state={state} />
+    </form>
   );
 }
