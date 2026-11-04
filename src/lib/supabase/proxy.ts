@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { devPreviewUserId, supabaseEnv } from "./config";
 
 /** Rute yang boleh diakses tanpa login. */
-const PUBLIC_PREFIXES = ["/login", "/daftar", "/auth", "/p/", "/api/cron", "/api/webhooks"];
+const PUBLIC_PREFIXES = ["/login", "/daftar", "/auth", "/p/", "/api/cron", "/api/webhooks", "/api/files"];
 
 function isPublic(pathname: string) {
   return PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix));

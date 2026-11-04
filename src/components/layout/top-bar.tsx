@@ -1,21 +1,24 @@
 import { LogOut } from "lucide-react";
 import { signOut } from "@/app/(auth)/actions";
 import { Button } from "@/components/ui/button";
+import { PropertySwitcher } from "./property-switcher";
 import { ThemeToggle } from "./theme-toggle";
 
 export function TopBar({
-  propertyName,
+  properties,
+  activeId,
   periodLabel,
   userName,
 }: {
-  propertyName: string | null;
+  properties: { id: string; name: string }[];
+  activeId: string | null;
   periodLabel: string;
   userName: string;
 }) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur lg:px-6">
       <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold">{propertyName ?? "Kosku"}</p>
+        <PropertySwitcher properties={properties} activeId={activeId} />
         <p className="text-xs text-muted-foreground">{periodLabel}</p>
       </div>
       <span className="hidden text-sm text-muted-foreground sm:inline">{userName}</span>

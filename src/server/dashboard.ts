@@ -1,4 +1,6 @@
 import "server-only";
+import { cookies } from "next/headers";
+import { cache } from "react";
 import { and, asc, count, desc, eq, inArray, isNull, lt, or, sql, sum } from "drizzle-orm";
 import { asUser, schema as s } from "@/db";
 import { displayStatus, periodOf, todayIn, daysBetween, type IsoDate } from "@/lib/billing";
@@ -6,10 +8,12 @@ import type { BadgeStatus } from "@/components/ui/status-badge";
 
 export type ActiveProperty = { id: string; name: string; code: string; timezone: string };
 
-/** Properti pertama milik user. UI multi-properti menyusul di Fase 3. */
-export async function getActiveProperty(userId: string): Promise<ActiveProperty | null> {
-  return asUser(userId, async (tx) => {
-    const [row] = await tx
+export const ACTIVE_PROPERTY_COOKIE = "kosku_property";
+
+/** Semua properti yang bisa diakses user (RLS), urut dibuat. */
+export const listMyProperties = cache(async (userId: string): Promise<ActiveProperty[]> =>
+  asUser(userId, (tx) =>
+    tx
       .select({
         id: s.properties.id,
         name: s.properties.name,
@@ -18,11 +22,19 @@ export async function getActiveProperty(userId: string): Promise<ActiveProperty 
       })
       .from(s.properties)
       .where(isNull(s.properties.archivedAt))
-      .orderBy(asc(s.properties.createdAt))
-      .limit(1);
-    return row ?? null;
-  });
-}
+      .orderBy(asc(s.properties.createdAt)),
+  ),
+);
+
+/**
+ * Properti aktif: pilihan terakhir user (cookie) bila masih punya akses,
+ * selain itu properti pertama.
+ */
+export const getActiveProperty = cache(async (userId: string): Promise<ActiveProperty | null> => {
+  const list = await listMyProperties(userId);
+  const chosen = (await cookies()).get(ACTIVE_PROPERTY_COOKIE)?.value;
+  return list.find((p) => p.id === chosen) ?? list[0] ?? null;
+});
 
 export type DashboardData = {
   today: IsoDate;
@@ -281,6 +293,55 @@ export async function getDashboard(userId: string, property: ActiveProperty): Pr
         dueDate: r.dueDate,
         status: roomDisplayStatus(r, today),
       })),
+    };
+  });
+}
+
+export type JobHealth = {
+  failed: { job: string; error: string | null; at: Date } | null;
+  lastSuccessAt: Date | null;
+  /** production saja: job harian belum sukses > 26 jam */
+  stale: boolean;
+};
+
+/** Kesehatan job otomatis (NFR-9): job terakhir gagal, atau lama tidak jalan. */
+export async function getJobHealth(userId: string, propertyId: string): Promise<JobHealth> {
+  return asUser(userId, async (tx) => {
+    const latest = await tx
+      .select({
+        job: s.jobRuns.job,
+        status: s.jobRuns.status,
+        error: s.jobRuns.error,
+        startedAt: s.jobRuns.startedAt,
+      })
+      .from(s.jobRuns)
+      .where(
+        and(
+          eq(s.jobRuns.propertyId, propertyId),
+          inArray(s.jobRuns.job, ["generate_invoices", "apply_late_fees", "schedule_reminders"]),
+        ),
+      )
+      .orderBy(desc(s.jobRuns.startedAt))
+      .limit(3);
+    const failed = latest.find((r) => r.status === "failed");
+    const [success] = await tx
+      .select({ at: s.jobRuns.startedAt })
+      .from(s.jobRuns)
+      .where(
+        and(
+          eq(s.jobRuns.propertyId, propertyId),
+          eq(s.jobRuns.job, "generate_invoices"),
+          eq(s.jobRuns.status, "success"),
+        ),
+      )
+      .orderBy(desc(s.jobRuns.startedAt))
+      .limit(1);
+    return {
+      failed: failed ? { job: failed.job, error: failed.error, at: failed.startedAt } : null,
+      lastSuccessAt: success?.at ?? null,
+      stale:
+        process.env.NODE_ENV === "production" &&
+        (!success || Date.now() - success.at.getTime() > 26 * 60 * 60 * 1000),
     };
   });
 }

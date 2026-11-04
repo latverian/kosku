@@ -16,11 +16,13 @@ Spesifikasi lengkap ada di `specs/`. Baca dokumen yang relevan sebelum menambah 
 - **Uang**: bilangan bulat Rupiah (`bigint` mode number). Jangan pernah float/desimal. Format dengan `formatRupiah`.
 - **Tanggal**: tanggal kalender sebagai string `YYYY-MM-DD` (`IsoDate`); "hari ini" selalu `todayIn(property.timezone)`.
 - **Logika bisnis murni** (tagihan, denda, status, template) di `src/lib/**` tanpa I/O, wajib ada tes unit di `tests/unit`.
+- **Lapisan service** (`src/services/*`): semua logika yang menyentuh database. Menerima `tx`, tanpa `server-only`/`next/*` agar bisa diuji Vitest (`tests/db`). Server action (`src/app/**/actions.ts`) hanya: `requireContext()` → `parseForm(zod)` → `attempt(() => asUser(user.id, tx => service(...)))` → `revalidatePath`. Lempar `ServiceError` untuk pesan yang boleh dilihat pengguna.
 - **Akses database**:
   - Request pemilik/pengelola → `asUser(user.id, tx => ...)` dari `@/db` (RLS berlaku).
   - `adminDb()` (melewati RLS) hanya untuk cron, webhook, dan portal penghuni setelah token divalidasi.
   - Selalu ambil user lewat `getCurrentUser()` (`src/server/auth.ts`) di halaman & server action. Jangan percaya proxy saja.
 - **Migrasi**: ubah `src/db/schema.ts` → `pnpm db:generate`. Trigger, fungsi, dan RLS ditulis tangan di migrasi kustom (`pnpm drizzle-kit generate --custom --name ...`). Jangan mengedit migrasi yang sudah ter-deploy.
 - **Rendering**: `cacheComponents` sengaja tidak dipakai; semua halaman dashboard dinamis per pengguna.
+- **Form**: `TextField`/`MoneyField`/`Field` dari `src/components/forms.tsx`. ID input harus unik di satu halaman (TextField otomatis via `useId`; `Field` + input sendiri → beri `htmlFor`/`id` unik).
 - **Komponen UI**: gaya shadcn/ui di `src/components/ui`. Warna status memakai token `status-*` dan selalu disertai ikon/teks.
 - **Sebelum commit**: `pnpm lint && pnpm typecheck && pnpm test` (dan `pnpm test:db` bila menyentuh database).

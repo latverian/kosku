@@ -14,40 +14,48 @@ Estimasi untuk 1 developer paruh waktu (±15–20 jam/minggu). Setiap fase berak
 - [ ] Vercel preview per PR — aktif setelah repo dihubungkan ke Vercel
 - [x] `.env.example`, README cara setup
 
-## Fase 1 — MVP: tagihan & pembayaran (minggu 2–4)
-- [ ] Properti, pengaturan, rekening bank
-- [ ] CRUD kamar (+ tambah massal)
-- [ ] Penghuni + check-in / check-out / pindah kamar
-- [ ] `lib/billing` + unit test (jatuh tempo, prorata, status)
-- [ ] Job `generate_invoices` + `job_runs`
-- [ ] Daftar & detail tagihan, tambah item, koreksi, batalkan
-- [ ] Catat pembayaran manual, verifikasi, kredit kelebihan bayar
-- [ ] **Dashboard**: kartu ringkasan, kisi status kamar, perlu tindakan
-- [ ] Audit log
+## Fase 1 — MVP: tagihan & pembayaran (minggu 2–4) ✅ selesai
+- [x] Buat properti (onboarding akun baru), pengaturan, rekening bank (maks. 3)
+- [x] CRUD kamar (+ tambah massal), arsipkan kamar
+- [x] Penghuni + check-in (wizard 3 langkah, pratinjau tagihan pertama) / check-out / pindah kamar
+- [x] NIK disimpan terenkripsi (AES-256-GCM, `NIK_ENCRYPTION_KEY`)
+- [x] `lib/billing` + unit test (siklus, prorata, rencana tagihan, status)
+- [x] Job `generate_invoices` (Vercel Cron harian 07.00 WIB) + `job_runs`, tombol "Buat tagihan sekarang"
+- [x] Daftar & detail tagihan, tambah/hapus item, batalkan
+- [x] Catat pembayaran manual, verifikasi/tolak, saldo kelebihan bayar dipakai otomatis
+- [x] **Dashboard**: kartu ringkasan, kisi status kamar, perlu tindakan
+- [x] Audit log untuk semua perubahan penting
+- [ ] Upload foto KTP & bukti bayar → dipindah ke Fase 2 (butuh Supabase Storage, bersama portal penghuni)
 
 ✅ **Rilis v0.1**: pemilik bisa memakai Kosku menggantikan buku/Excel. Pengingat masih manual (tombol "Kirim WA" membuka `wa.me` dengan pesan terisi).
 
-## Fase 2 — WhatsApp, portal & komplain (minggu 5–7)
-- [ ] Interface `WhatsAppProvider` + Fonnte + ConsoleProvider
-- [ ] Template pesan + editor + pratinjau
-- [ ] Jobs `schedule_reminders`, `send_messages`, jam tenang, retry
-- [ ] Log pesan, kirim ulang, mute per penghuni
-- [ ] Portal penghuni (token, tagihan, upload bukti, riwayat)
-- [ ] Notifikasi WA: bukti baru (ke pemilik), lunas, ditolak, sambutan
-- [ ] Komplain: buat (portal & staf), foto, status, komentar, penugasan, rating
-- [ ] Broadcast pengumuman
-- [ ] Denda keterlambatan (`apply_late_fees`)
+## Fase 2 — WhatsApp, portal & komplain (minggu 5–7) ✅ selesai
+- [x] Interface `WhatsAppProvider` + Fonnte + ConsoleProvider
+- [x] Template pesan + editor + pratinjau langsung (peringatan variabel tidak dikenal)
+- [x] Jobs `schedule_reminders`, `send_messages`, jam tenang, retry (1/5/15 menit), toleransi 1 hari bila job terlewat
+- [x] Log pesan, kirim ulang, mute per penghuni, pesan uji, "Kirim antrian sekarang"
+- [x] Portal penghuni (token HMAC + versi untuk dicabut, tagihan, rekening + salin, upload bukti, riwayat, berlaku 30 hari setelah check-out)
+- [x] Notifikasi WA: bukti baru (ke pengelola), konfirmasi bayar (termasuk cicilan), ditolak, sambutan, komplain baru/update
+- [x] Komplain: buat (portal & staf), foto (dikompres di browser), status, komentar dua arah, penugasan, biaya → pengeluaran, rating
+- [x] Broadcast pengumuman (semua / per lantai)
+- [x] Denda keterlambatan otomatis (`apply_late_fees`, idempoten)
+- [x] Penyimpanan file privat (Supabase Storage + signed URL 10 menit; disk lokal + URL HMAC untuk development)
+- [ ] Upload foto KTP → Fase 3 (bersama pengelolaan dokumen penghuni)
+- [ ] Webhook status pesan Fonnte (terkirim → dibaca) → Fase 3
 
 ✅ **Rilis v0.2**: penagihan berjalan otomatis, penghuni punya portal.
 
-## Fase 3 — Keuangan & otomasi penuh (minggu 8–10)
-- [ ] Pengeluaran + foto nota, biaya komplain → pengeluaran
-- [ ] Laporan bulanan/tahunan, aging tunggakan, grafik 12 bulan
-- [ ] Ekspor Excel & PDF, PDF tagihan & kuitansi
-- [ ] Payment gateway (Midtrans/Xendit): link bayar di WA, webhook → lunas otomatis
-- [ ] Peran manager + izin keuangan, undang anggota tim
-- [ ] UI multi-properti (pilih properti di header)
-- [ ] Sentry + peringatan job gagal
+## Fase 3 — Keuangan & otomasi penuh (minggu 8–10) ✅ selesai
+- [x] Pengeluaran + foto nota, biaya komplain → pengeluaran
+- [x] Laporan bulanan (laba-rugi kas per metode/kategori), 12 bulan, umur tunggakan, grafik pemasukan vs pengeluaran
+- [x] Ekspor Excel (bulanan, 12 bulan, tunggakan) & PDF (laporan bulanan), PDF tagihan & kuitansi (staf & portal; `{link_kuitansi}` di WA)
+- [x] Payment gateway Midtrans Snap: tombol bayar di portal, webhook (signature + cek status ulang) → lunas otomatis, idempoten
+- [x] Peran pengelola + izin keuangan, tambah/hapus anggota tim (pengelola daftar akun dulu)
+- [x] Multi-properti: pilih kos di header, tambah kos lain
+- [x] Peringatan job gagal / tidak berjalan > 26 jam di dashboard
+- [x] Foto KTP (bucket privat) & webhook status pesan Fonnte (terkirim → dibaca)
+- [ ] Sentry → belum (butuh akun Sentry; error tetap tercatat di log Vercel)
+- [ ] Grafik ditagihkan vs diterima di dashboard → tersedia di Keuangan (tabel 12 bulan)
 
 ✅ **Rilis v1.0**
 

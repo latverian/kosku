@@ -244,6 +244,8 @@ export const tenants = pgTable(
     emergencyPhone: text("emergency_phone"),
     remindersMuted: boolean("reminders_muted").notNull().default(false),
     portalTokenHash: text("portal_token_hash").unique(),
+    /** Dinaikkan untuk mencabut link portal lama (lihat src/lib/portal-token.ts). */
+    portalTokenVersion: smallint("portal_token_version").notNull().default(1),
     portalTokenCreatedAt: tstz("portal_token_created_at"),
     notes: text("notes"),
     archivedAt: tstz("archived_at"),
@@ -270,6 +272,8 @@ export const leases = pgTable(
     endDate: date("end_date"),
     monthlyRent: money("monthly_rent").notNull(),
     billingDay: smallint("billing_day").notNull(),
+    /** Penghuni lama yang baru dimasukkan: periode sebelum ini tidak ditagih. */
+    billingStartPeriod: date("billing_start_period"),
     depositAmount: money("deposit_amount").notNull().default(0),
     depositStatus: depositStatus("deposit_status").notNull().default("held"),
     depositRefunded: money("deposit_refunded").notNull().default(0),
@@ -309,6 +313,9 @@ export const invoices = pgTable(
     period: date("period").notNull(),
     issueDate: date("issue_date").notNull(),
     dueDate: date("due_date").notNull(),
+    /** Rentang siklus yang ditagih: [covers_from, covers_to) */
+    coversFrom: date("covers_from"),
+    coversTo: date("covers_to"),
     total: money("total").notNull().default(0),
     paidAmount: money("paid_amount").notNull().default(0),
     status: invoiceStatus("status").notNull().default("issued"),
@@ -374,7 +381,7 @@ export const payments = pgTable(
     index("payments_invoice_idx").on(t.invoiceId),
     index("payments_property_status_idx").on(t.propertyId, t.status),
     check("payments_amount_positive", sql`${t.amount} > 0`),
-    check("payments_submitted_by", sql`${t.submittedBy} in ('tenant', 'staff', 'gateway')`),
+    check("payments_submitted_by", sql`${t.submittedBy} in ('tenant', 'staff', 'gateway', 'system')`),
   ],
 );
 
@@ -527,9 +534,13 @@ export const messages = pgTable(
   },
   (t) => [
     // satu jenis pengingat hanya sekali per tagihan (FR-5.3)
+    // Satu jenis PENGINGAT hanya sekali per tagihan (FR-5.3). Konfirmasi
+    // pembayaran boleh berkali-kali (cicilan).
     uniqueIndex("messages_one_reminder_per_type_uq")
       .on(t.invoiceId, t.type)
-      .where(sql`${t.invoiceId} is not null`),
+      .where(
+        sql`${t.invoiceId} is not null and ${t.type} in ('reminder_before', 'reminder_due', 'reminder_overdue_1', 'reminder_overdue_3', 'reminder_overdue_7')`,
+      ),
     index("messages_queue_idx").on(t.status, t.scheduledAt),
     index("messages_property_created_idx").on(t.propertyId, t.createdAt),
   ],

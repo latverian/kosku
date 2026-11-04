@@ -11,5 +11,6 @@ export default defineConfig({
     include: ["tests/db/**/*.test.ts"],
     fileParallelism: false,
     setupFiles: ["./src/db/load-env.ts"],
+    env: { PORTAL_SECRET: "rahasia-portal-untuk-tes-123", APP_URL: "https://kosku.test" },
   },
 });

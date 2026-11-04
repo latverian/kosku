@@ -1,28 +1,52 @@
 import { Banknote, ChevronRight, CircleAlert, MessageCircleWarning, Plus, Wrench } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { STATUS_ICON, STATUS_TONE, StatusBadge, BADGE_LABEL } from "@/components/ui/status-badge";
 import { formatDate, formatRupiah, formatRupiahShort } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { getCurrentUser } from "@/server/auth";
-import { getActiveProperty, getDashboard, type DashboardData } from "@/server/dashboard";
+import { getActiveProperty, getDashboard, getJobHealth, type DashboardData } from "@/server/dashboard";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   const property = await getActiveProperty(user.id);
-  if (!property) return <NoProperty />;
+  if (!property) redirect("/mulai");
 
   const data = await getDashboard(user.id, property);
+  const health = await getJobHealth(user.id, property.id);
   const percent = data.billed > 0 ? Math.round((data.received / data.billed) * 100) : 0;
   const occupancy = data.roomsTotal > 0 ? Math.round((data.roomsOccupied / data.roomsTotal) * 100) : 0;
 
   return (
     <div className="space-y-4 lg:space-y-6">
       <h1 className="sr-only">Dashboard {property.name}</h1>
+      {health.failed && (
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-lg bg-status-overdue-bg p-3 text-sm text-status-overdue"
+        >
+          <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>
+            Job otomatis <strong>{health.failed.job}</strong> gagal (
+            {formatDate(health.failed.at, property.timezone)}): {health.failed.error ?? "tanpa keterangan"}.
+            Tagihan atau pengingat mungkin belum dibuat.
+          </span>
+        </p>
+      )}
+      {!health.failed && health.stale && (
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-lg bg-status-pending-bg p-3 text-sm text-status-pending"
+        >
+          <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+          Job harian belum berjalan lebih dari 26 jam. Periksa CRON_SECRET dan jadwal cron di Vercel.
+        </p>
+      )}
 
       {/* Kartu ringkasan — FR-6.1, FR-6.2 */}
       <section aria-label="Ringkasan bulan ini" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
@@ -68,7 +92,7 @@ export default async function DashboardPage() {
         <div className="space-y-4">
           <RoomGrid data={data} />
           {/* Aksi utama di HP, sesuai wireframe specs/06 § 4.1 (desktop: menu Pembayaran) */}
-          <Link href="/pembayaran" className={cn(buttonVariants({ size: "lg" }), "w-full lg:hidden")}>
+          <Link href="/pembayaran/catat" className={cn(buttonVariants({ size: "lg" }), "w-full lg:hidden")}>
             <Plus aria-hidden /> Catat Pembayaran
           </Link>
         </div>
@@ -273,7 +297,7 @@ function ActionList({ data }: { data: DashboardData }) {
                 icon={<MessageCircleWarning className="text-status-overdue" aria-hidden />}
                 title={`${data.failedMessages} pesan WA gagal terkirim`}
                 subtitle="Kirim ulang dari halaman Pesan WA"
-                href="/pesan"
+                href="/pesan?status=failed"
               />
             )}
           </ul>
@@ -334,29 +358,5 @@ function waLink(phone: string, text: string) {
 function EmptyState({ text }: { text: string }) {
   return (
     <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">{text}</p>
-  );
-}
-
-function NoProperty() {
-  return (
-    <Card className="mx-auto max-w-lg">
-      <CardHeader>
-        <CardTitle>Selamat datang di Kosku 👋</CardTitle>
-        <CardDescription>Akun kamu belum terhubung ke kos mana pun.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3 text-sm">
-        <ol className="list-decimal space-y-1.5 pl-5">
-          <li>Buat properti (nama kos, alamat, kode singkat)</li>
-          <li>Tambah rekening bank tujuan transfer</li>
-          <li>Tambah kamar</li>
-          <li>Check-in penghuni yang sudah ada</li>
-          <li>Hubungkan WhatsApp</li>
-        </ol>
-        <p className="rounded-lg bg-muted p-3 text-muted-foreground">
-          Formulir tambah properti hadir di Fase 1. Untuk mencoba sekarang, jalankan{" "}
-          <code className="text-xs">SEED_OWNER_EMAIL=email-kamu pnpm db:seed</code> untuk mengisi data contoh.
-        </p>
-      </CardContent>
-    </Card>
   );
 }

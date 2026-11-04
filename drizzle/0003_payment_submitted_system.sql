@@ -1,0 +1,2 @@
+ALTER TABLE "payments" DROP CONSTRAINT "payments_submitted_by";--> statement-breakpoint
+ALTER TABLE "payments" ADD CONSTRAINT "payments_submitted_by" CHECK ("payments"."submitted_by" in ('tenant', 'staff', 'gateway', 'system'));
