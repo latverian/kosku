@@ -36,6 +36,10 @@
 | **Finance**               | Cash-basis profit & loss per month, 12-month chart, accounts-receivable aging, expenses with receipt photos, **Excel and PDF export**, PDF invoices and receipts                                                                                     |
 | **Team & multi-property** | Owner/manager roles with optional finance access, switch between properties from the header, row-level security on every table                                                                                                                       |
 
+<p align="center">
+  <img src="docs/screenshots/finance.png" alt="Finance: monthly profit and loss, income vs expenses chart, 12-month table" width="820">
+</p>
+
 ## Tech stack
 
 | Layer          | Choice                                                                                    |
