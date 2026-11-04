@@ -5,12 +5,12 @@
 | Lapisan | Pilihan | Alasan singkat |
 |---|---|---|
 | **Bahasa** | **TypeScript** | Satu bahasa untuk frontend + backend, tipe data mencegah bug hitung uang |
-| Framework web | **Next.js 15 (App Router)** | Frontend + API + server actions dalam satu project, deploy 1 klik ke Vercel |
+| Framework web | **Next.js 16 (App Router)** | Frontend + API + server actions dalam satu project, deploy 1 klik ke Vercel |
 | **Database** | **PostgreSQL** (via **Supabase**) | Relasional, transaksi ACID, constraint kuat, gratis untuk skala kecil |
 | ORM / query | **Drizzle ORM** | Ringan, SQL-like, tipe otomatis dari skema, migrasi berbasis file |
 | Auth | **Supabase Auth** | Email/password, magic link, terintegrasi dengan RLS |
 | Penyimpanan file | **Supabase Storage** | Foto KTP, bukti bayar, foto komplain (bucket privat + signed URL) |
-| UI | **Tailwind CSS + shadcn/ui** | Komponen siap pakai, rapi, mudah dikustom, mendukung mode gelap |
+| UI | **Tailwind CSS 4 + komponen gaya shadcn/ui** | Komponen rapi, mudah dikustom, mendukung mode gelap |
 | Form & validasi | **React Hook Form + Zod** | Satu skema validasi untuk client dan server |
 | Grafik | **Recharts** | Grafik pemasukan di dashboard |
 | Tanggal | **date-fns + date-fns-tz** | Perhitungan jatuh tempo dan zona waktu WIB/WITA/WIT |
@@ -83,6 +83,7 @@ Data kos sangat **relasional**: properti → kamar → sewa → tagihan → pemb
 ```
 kosku/
 ├─ specs/                     # dokumen spesifikasi (folder ini)
+├─ drizzle/                   # migrasi SQL (skema + trigger & RLS)
 ├─ src/
 │  ├─ app/
 │  │  ├─ (auth)/login/        # halaman login
@@ -103,7 +104,6 @@ kosku/
 │  ├─ components/             # komponen UI (shadcn/ui)
 │  ├─ db/
 │  │  ├─ schema.ts            # skema Drizzle
-│  │  └─ migrations/
 │  ├─ lib/
 │  │  ├─ billing/             # logika tagihan, denda, status (murni, mudah di-test)
 │  │  ├─ whatsapp/            # interface provider + implementasi Fonnte

@@ -2,13 +2,17 @@
 
 Estimasi untuk 1 developer paruh waktu (±15–20 jam/minggu). Setiap fase berakhir dengan versi yang **bisa dipakai** di kos sungguhan.
 
-## Fase 0 — Fondasi (minggu 1)
-- [ ] Inisialisasi Next.js + TypeScript strict + Tailwind + shadcn/ui + ESLint/Prettier
-- [ ] Supabase project (staging & prod) + Supabase CLI lokal
-- [ ] Skema Drizzle awal + migrasi + seed data contoh
-- [ ] Auth (login email/magic link), layout dashboard, navigasi HP & desktop
-- [ ] GitHub Actions: lint, typecheck, test; Vercel preview per PR
-- [ ] `.env.example`, README cara setup
+## Fase 0 — Fondasi (minggu 1) ✅ selesai
+- [x] Inisialisasi Next.js 16 + TypeScript strict + Tailwind 4 + komponen gaya shadcn/ui + ESLint/Prettier
+- [ ] Supabase project (staging & prod) — **perlu dibuat pemilik** (lihat README § Setup)
+- [x] Skema Drizzle (20 tabel) + migrasi trigger & RLS + seed data contoh
+- [x] Auth (login email/password, magic link, daftar), layout dashboard, navigasi HP & desktop
+- [x] Dashboard awal dari data nyata: kartu ringkasan, kisi status kamar, daftar perlu tindakan
+- [x] Logika inti `lib/billing` (jatuh tempo, prorata, denda, status) + template WA, dengan tes unit
+- [x] Tes integrasi database (trigger & RLS)
+- [x] GitHub Actions: lint, typecheck, test, build, migrasi + tes DB
+- [ ] Vercel preview per PR — aktif setelah repo dihubungkan ke Vercel
+- [x] `.env.example`, README cara setup
 
 ## Fase 1 — MVP: tagihan & pembayaran (minggu 2–4)
 - [ ] Properti, pengaturan, rekening bank
