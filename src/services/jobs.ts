@@ -95,11 +95,6 @@ export async function runDaily(
   return results;
 }
 
-/** Dipertahankan untuk endpoint lama /api/cron/generate-invoices. */
-export function runGenerateInvoices(db: Db, opts: { now?: Date } = {}) {
-  return runDaily(db, { ...opts, only: ["generate_invoices"] });
-}
-
 /** Kirim pesan yang sudah waktunya (semua kos). */
 export async function runSendMessages(
   db: Db,
