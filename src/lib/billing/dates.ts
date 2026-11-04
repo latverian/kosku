@@ -79,28 +79,3 @@ export function dueDate(period: IsoDate, billingDay: number): IsoDate {
 export function defaultBillingDay(startDate: IsoDate): number {
   return Math.min(parseIsoDate(startDate).d, 28);
 }
-
-/**
- * Periode tagihan pertama sebuah sewa: periode yang jatuh temponya
- * ≥ tanggal masuk. Masuk 5 Nov, tagih tgl 5 → Nov. Masuk 20 Nov, tagih tgl 5 → Des.
- */
-export function firstPeriod(startDate: IsoDate, billingDay: number): IsoDate {
-  const period = periodOf(startDate);
-  return dueDate(period, billingDay) >= startDate ? period : addMonths(period, 1);
-}
-
-/**
- * Prorata bulan pertama (AC FR-2.2): harga × sisa hari / jumlah hari bulan itu,
- * dibulatkan ke atas ke ribuan. Sisa hari dihitung termasuk tanggal masuk.
- * Contoh: masuk 20 Nov (30 hari), Rp1.500.000 → 11 hari → Rp550.000.
- */
-export function prorate(monthlyRent: number, startDate: IsoDate): number {
-  if (!Number.isSafeInteger(monthlyRent) || monthlyRent < 0) {
-    throw new RangeError(`Harga sewa tidak valid: ${monthlyRent}`);
-  }
-  const { y, m, d } = parseIsoDate(startDate);
-  const total = daysInMonth(y, m);
-  const remaining = total - d + 1;
-  const raw = (monthlyRent * remaining) / total;
-  return Math.ceil(raw / 1000) * 1000;
-}

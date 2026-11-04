@@ -6,12 +6,10 @@ import {
   defaultBillingDay,
   displayStatus,
   dueDate,
-  firstPeriod,
   invoiceNumber,
   isOverdue,
   lateFee,
   periodOf,
-  prorate,
   todayIn,
 } from "@/lib/billing";
 
@@ -41,11 +39,6 @@ describe("tanggal tagihan", () => {
     expect(addMonths("2026-01-01", -1)).toBe("2025-12-01");
   });
 
-  it("periode pertama sewa", () => {
-    expect(firstPeriod("2026-11-05", 5)).toBe("2026-11-01");
-    expect(firstPeriod("2026-11-20", 5)).toBe("2026-12-01");
-  });
-
   it("lead 7 hari: tagihan Desember (jatuh tempo 5 Des) dibuat 28 Nov", () => {
     const due = dueDate("2026-12-01", 5);
     expect(daysBetween("2026-11-27", due)).toBe(8); // belum
@@ -56,21 +49,6 @@ describe("tanggal tagihan", () => {
     const now = new Date("2026-11-30T17:30:00Z"); // 1 Des 00.30 WIB
     expect(todayIn("Asia/Jakarta", now)).toBe("2026-12-01");
     expect(todayIn("UTC", now)).toBe("2026-11-30");
-  });
-});
-
-describe("prorata", () => {
-  it("masuk 20 Nov, Rp1.500.000, 30 hari → 11 hari → Rp550.000", () => {
-    expect(prorate(1_500_000, "2026-11-20")).toBe(550_000);
-  });
-
-  it("dibulatkan ke atas ke ribuan", () => {
-    // 1.000.000 × 10/31 = 322.580,6 → 323.000
-    expect(prorate(1_000_000, "2026-12-22")).toBe(323_000);
-  });
-
-  it("masuk tanggal 1 = harga penuh", () => {
-    expect(prorate(1_500_000, "2026-11-01")).toBe(1_500_000);
   });
 });
 

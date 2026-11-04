@@ -414,7 +414,9 @@ describe("pindah kamar & penghuni lama", () => {
 
 describe("job harian", () => {
   it("membuat tagihan untuk semua properti dan mencatat job_runs", async () => {
-    const { runGenerateInvoices } = await import("@/services/jobs");
+    const { runDaily } = await import("@/services/jobs");
+    const runGenerateInvoices = (database: typeof db, opts: { now: Date }) =>
+      runDaily(database, { ...opts, only: ["generate_invoices"] });
     // 1 Jan 2027 00.30 WIB
     const results = await runGenerateInvoices(db, { now: new Date("2026-12-31T17:30:00Z") });
     const mine = results.find((r) => r.propertyId === propertyId);

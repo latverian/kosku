@@ -58,33 +58,17 @@ flowchart LR
 
 | Job | Jadwal (WIB) | Endpoint | Tugas |
 |---|---|---|---|
-| `generate_invoices` | setiap hari 07.00 | `POST /api/cron/generate-invoices` | Buat tagihan untuk sewa aktif yang jatuh tempo ≤ `invoice_lead_days` hari lagi dan belum punya tagihan periode itu |
-| `apply_late_fees` | setiap hari 07.05 | `POST /api/cron/apply-late-fees` | Tambah/perbarui item `late_fee` untuk tagihan terlambat melewati masa tenggang |
-| `schedule_reminders` | setiap hari 07.10 | `POST /api/cron/schedule-reminders` | Masukkan pesan pengingat ke antrian `messages` (status `queued`, `scheduled_at` ≥ jam 08.00) |
-| `send_messages` | setiap 5 menit | `POST /api/cron/send-messages` | Ambil ≤ 20 pesan `queued` yang sudah waktunya, kirim via provider dengan jeda 5–15 detik, perbarui status |
+| `generate_invoices` | 07.00, langkah 1 | `GET/POST /api/cron/daily` | Buat tagihan untuk sewa aktif yang jatuh tempo ≤ `invoice_lead_days` hari lagi dan belum punya tagihan periode itu |
+| `apply_late_fees` | 07.00, langkah 2 | (sama) | Tambah/perbarui item `late_fee` otomatis untuk tagihan terlambat melewati masa tenggang |
+| `schedule_reminders` | 07.00, langkah 3 | (sama) | Masukkan pengingat ke antrian `messages` (`scheduled_at` ≥ akhir jam tenang) |
+| `send_messages` | 08.05 (Vercel) + tiap 5 menit (pg_cron, opsional) | `GET/POST /api/cron/send-messages` | Ambil ≤ 20 pesan `queued` yang sudah waktunya, kirim dengan jeda 2–4 detik, perbarui status / retry |
 
 Setiap eksekusi mencatat baris di `job_runs`. Dashboard menampilkan peringatan bila job terakhir `failed` atau tidak berjalan > 26 jam.
 
 > **Catatan Vercel**: fungsi serverless di tier Hobby dibatasi ±60 detik. Karena itu `send_messages` hanya memproses batch kecil per pemanggilan dan dipanggil tiap 5 menit, bukan mengirim semua sekaligus.
 
-### 2.1 Pseudocode `generate_invoices`
-```ts
-for (const lease of activeLeases) {
-  const period = nextPeriod(lease, today)         // bulan tagihan berikutnya
-  const due    = dueDate(period, lease.billingDay)
-  if (daysBetween(today, due) > settings.invoiceLeadDays) continue
-  if (lease.endDate && due > lease.endDate) continue
-
-  const amount = isFirstPeriod(lease, period) && settings.prorateFirstMonth
-    ? prorate(lease.monthlyRent, lease.startDate, period)
-    : lease.monthlyRent
-
-  await db.insert(invoices)
-    .values({ leaseId, period, dueDate: due, number: invoiceNumber(...), ... })
-    .onConflictDoNothing({ target: [invoices.leaseId, invoices.period] })  // idempoten
-  // + insert invoice_items 'rent' (dan kredit penghuni bila ada saldo)
-}
-```
+### 2.1 Pembuatan tagihan
+Rencana tagihan dihitung oleh fungsi murni `planInvoices` (`src/lib/billing/plan.ts`) dengan **model siklus**: tagihan periode P menutup `[tanggal tagih P, tanggal tagih P+1)`. Penghuni yang masuk di tengah siklus mendapat tagihan pertama yang jatuh tempo di hari masuk (prorata bila diaktifkan). `generateInvoicesForLease` (`src/services/billing.ts`) lalu menyisipkan tagihan + item sewa dengan `onConflictDoNothing` pada `UNIQUE(lease_id, period)` (idempoten) dan langsung memotong saldo kredit bila ada.
 
 ### 2.2 Pseudocode `schedule_reminders`
 ```ts
@@ -256,14 +240,14 @@ Portal penghuni (tagihan, bayar, lapor kerusakan): {link_portal}
 ### 5.1 Route handler (HTTP)
 | Method | Path | Auth | Fungsi |
 |---|---|---|---|
-| POST | `/api/cron/generate-invoices` | `CRON_SECRET` | Job tagihan |
-| POST | `/api/cron/apply-late-fees` | `CRON_SECRET` | Job denda |
-| POST | `/api/cron/schedule-reminders` | `CRON_SECRET` | Job jadwal pengingat |
-| POST | `/api/cron/send-messages` | `CRON_SECRET` | Worker kirim WA |
-| POST | `/api/webhooks/fonnte` | token webhook | Status pesan |
-| POST | `/api/webhooks/payment` | signature gateway | Notifikasi bayar (fase 3) |
-| GET | `/api/reports/:type.xlsx` | sesi owner | Ekspor laporan |
-| GET | `/api/invoices/:id/pdf` | sesi / token portal | PDF tagihan / kuitansi |
+| GET/POST | `/api/cron/daily` | `CRON_SECRET` | Tagihan → denda → jadwal pengingat |
+| GET/POST | `/api/cron/send-messages` | `CRON_SECRET` | Worker kirim WA |
+| POST | `/api/webhooks/fonnte?secret=…` | `FONNTE_WEBHOOK_SECRET` | Status pesan (terkirim/dibaca) |
+| POST | `/api/webhooks/payment` | signature Midtrans + cek status ke API | Notifikasi bayar |
+| GET | `/api/reports/[monthly\|yearly\|aging]?format=xlsx\|pdf` | sesi + izin keuangan | Ekspor laporan |
+| GET | `/api/invoices/[id]/pdf` | sesi (RLS) | PDF tagihan / kuitansi staf |
+| GET | `/p/[token]/tagihan/[id]/pdf` | token portal | PDF untuk penghuni |
+| GET | `/api/files/[bucket]/[...path]?exp&sig` | URL bertanda tangan HMAC | File lokal (development saja) |
 
 ### 5.2 Server actions (dipanggil dari form UI)
 | Modul | Actions |
