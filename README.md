@@ -100,6 +100,22 @@ SEED_OWNER_EMAIL=me@local.test pnpm db:seed
 
 Set `KOSKU_DEV_PREVIEW_USER_ID=<returned id>` in `.env.local`, then run `pnpm dev`.
 
+### Option C: full simulation (WhatsApp + online payment, no accounts)
+
+Runs Kosku together with a local simulator of the two external services, so every flow can be tried end to end on one machine: check-in → welcome WhatsApp → tenant opens the portal link from the chat → pays online → payment confirmed by webhook → confirmation WhatsApp.
+
+```bash
+pnpm sim            # first run creates the local database "kosku_sim" with demo data
+pnpm sim --reset    # start over from fresh demo data
+```
+
+| URL                     | What you see                                                                                                                                                                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `http://localhost:3000` | Kosku in development preview mode (no login)                                                                                                                                                                                   |
+| `http://localhost:3200` | WhatsApp simulator: every message Kosku sends, per phone number, with sent → delivered → read ticks reported back through the real Fonnte webhook. Untick **Perangkat Fonnte terhubung** to see failures and automatic retries |
+
+Online payments open a simulated Midtrans page (QRIS / GoPay / VA, or a forced failure). Paying sends a SHA-512-signed notification to `/api/webhooks/payment`, and Kosku re-checks the status against the simulator exactly as it does with Midtrans. The simulator ([`scripts/sim/server.mjs`](scripts/sim/server.mjs)) has no dependencies and keeps its data in memory. Only `FONNTE_API_URL` and `MIDTRANS_BASE_URL` point the app at it, so the production code paths are the ones being exercised. Secrets for the simulation are generated once into `.data/sim.env`; `.env.local` is not modified.
+
 ### Running locally without integrations
 
 | Feature        | Behaviour without credentials                                                                                                      |
@@ -138,6 +154,7 @@ See [`.env.example`](.env.example) for the full annotated list.
 | `pnpm db:migrate`                              | Apply migrations                                                           |
 | `pnpm db:seed`                                 | Load demo data                                                             |
 | `pnpm db:studio`                               | Browse the database                                                        |
+| `pnpm sim`                                     | Full local simulation with WhatsApp & Midtrans simulators (see Option C)   |
 
 ## Background jobs
 

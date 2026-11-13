@@ -17,7 +17,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/db/seed.ts",
     "db:studio": "drizzle-kit studio",
-    "db:reset-local": "bash scripts/db/reset-local.sh"
+    "db:reset-local": "bash scripts/db/reset-local.sh",
+    "sim": "bash scripts/sim/start.sh"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",

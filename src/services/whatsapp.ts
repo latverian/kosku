@@ -82,7 +82,8 @@ export class FonnteProvider implements WhatsAppProvider {
 
 /** Provider sesuai environment. */
 export function providerFromEnv(env: Record<string, string | undefined> = process.env): WhatsAppProvider {
-  if (env.FONNTE_TOKEN) return new FonnteProvider(env.FONNTE_TOKEN);
+  // FONNTE_API_URL hanya untuk simulasi lokal (scripts/sim); kosong = API Fonnte asli.
+  if (env.FONNTE_TOKEN) return new FonnteProvider(env.FONNTE_TOKEN, fetch, env.FONNTE_API_URL || undefined);
   if (env.NODE_ENV === "production") return new UnconfiguredProvider();
   return new ConsoleProvider();
 }
