@@ -47,4 +47,23 @@ describe("pemilihan provider", () => {
     expect(providerFromEnv({ NODE_ENV: "development" })).toBeInstanceOf(ConsoleProvider);
     expect(providerFromEnv({ NODE_ENV: "production" })).toBeInstanceOf(UnconfiguredProvider);
   });
+
+  it("FONNTE_API_URL mengarahkan Fonnte ke simulator", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(JSON.stringify({ status: true, id: ["9"] }), { status: 200 }));
+    try {
+      const provider = providerFromEnv({
+        FONNTE_TOKEN: "x",
+        FONNTE_API_URL: "http://localhost:3200/fonnte/send",
+      });
+      expect(await provider.send({ to: "62812", body: "Halo" })).toEqual({
+        ok: true,
+        providerMessageId: "9",
+      });
+      expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:3200/fonnte/send");
+    } finally {
+      fetchMock.mockRestore();
+    }
+  });
 });

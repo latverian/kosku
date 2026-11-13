@@ -74,6 +74,32 @@ describe("Midtrans", () => {
     expect(JSON.parse(init.body).transaction_details).toEqual({ order_id: "K-x", gross_amount: 1_500_000 });
   });
 
+  it("base URL simulator dipakai untuk Snap & cek status", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ redirect_url: "http://sim/pay/K-x" }), { status: 201 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ transaction_status: "settlement", gross_amount: "10.00" }), {
+          status: 200,
+        }),
+      );
+    const gw = new MidtransGateway(KEY, false, fetchMock, "http://localhost:3200/midtrans/");
+    await gw.createCheckout({
+      orderId: "K-x",
+      amount: 10,
+      customer: { name: "a", phone: "1" },
+      description: "x",
+      finishUrl: "y",
+    });
+    expect((await gw.getStatus("K-x")).state).toBe("settled");
+    expect(fetchMock.mock.calls.map((c) => c[0])).toEqual([
+      "http://localhost:3200/midtrans/snap/v1/transactions",
+      "http://localhost:3200/midtrans/v2/K-x/status",
+    ]);
+  });
+
   it("checkout gagal → error berisi pesan Midtrans", async () => {
     const fetchMock = vi
       .fn()

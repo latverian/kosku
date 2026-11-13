@@ -102,11 +102,20 @@ export class MidtransGateway implements PaymentGateway {
     private readonly serverKey: string,
     production: boolean,
     private readonly fetchImpl: typeof fetch = fetch,
+    /** Hanya untuk simulasi lokal (scripts/sim): satu base URL untuk Snap & API status. */
+    baseUrl?: string,
   ) {
-    this.snapUrl = production
-      ? "https://app.midtrans.com/snap/v1/transactions"
-      : "https://app.sandbox.midtrans.com/snap/v1/transactions";
-    this.apiUrl = production ? "https://api.midtrans.com/v2" : "https://api.sandbox.midtrans.com/v2";
+    const base = baseUrl?.replace(/\/+$/, "");
+    this.snapUrl = base
+      ? `${base}/snap/v1/transactions`
+      : production
+        ? "https://app.midtrans.com/snap/v1/transactions"
+        : "https://app.sandbox.midtrans.com/snap/v1/transactions";
+    this.apiUrl = base
+      ? `${base}/v2`
+      : production
+        ? "https://api.midtrans.com/v2"
+        : "https://api.sandbox.midtrans.com/v2";
   }
 
   private headers() {
@@ -166,5 +175,10 @@ export class MidtransGateway implements PaymentGateway {
 
 export function gatewayFromEnv(env: Record<string, string | undefined> = process.env): PaymentGateway | null {
   if (!env.MIDTRANS_SERVER_KEY) return null;
-  return new MidtransGateway(env.MIDTRANS_SERVER_KEY, env.MIDTRANS_IS_PRODUCTION === "true");
+  return new MidtransGateway(
+    env.MIDTRANS_SERVER_KEY,
+    env.MIDTRANS_IS_PRODUCTION === "true",
+    fetch,
+    env.MIDTRANS_BASE_URL || undefined,
+  );
 }
